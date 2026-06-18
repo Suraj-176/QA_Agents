@@ -1,0 +1,1 @@
+# Keep backend/static directory in git tracking while ignoring its subdirectory assets

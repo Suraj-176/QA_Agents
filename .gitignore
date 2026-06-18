@@ -1,0 +1,53 @@
+# ====================================================================
+# QA.AI Platform Git Ignore Rules
+# ====================================================================
+
+# --- OS / System Files ---
+.DS_Store
+.DS_Store?
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# --- Python Core Ignored Files ---
+**/__pycache__/
+**/*.py[cod]
+**/*$py.class
+**/.pytest_cache/
+**/.ipynb_checkpoints/
+**/Pipfile.lock
+**/poetry.lock
+
+# --- Python Virtual Environments ---
+backend/venv/
+backend/env/
+backend/ENV/
+backend/.env
+
+# --- Node.js / React Frontend ---
+frontend/node_modules/
+frontend/dist/
+frontend/build/
+frontend/.env
+frontend/.env.local
+frontend/.env.development.local
+frontend/.env.test.local
+frontend/.env.production.local
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+frontend/pnpm-debug.log*
+
+# --- Local Databases & Transient Files ---
+backend/qa_platform.db
+backend/qa_platform.db-journal
+
+# --- Dynamic Static Assets & Uploads ---
+# Ignore visual baseline screen grabs, run captures, and vision bug files to prevent repository bloat
+backend/static/baselines/
+backend/static/runs/
+backend/static/bugs/
+backend/static/temp_test_assets/
+
+# Keep static folder directory structure intact but empty
+!backend/static/.gitkeep
