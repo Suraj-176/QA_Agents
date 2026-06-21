@@ -128,12 +128,15 @@ class TestPhase4BugReporter(unittest.TestCase):
         # Configure mock post to return creation first, then attachment
         mock_post.side_effect = [mock_res_create, mock_res_attach]
 
-        # 3. Execute Export Endpoint
+        # 3. Execute Export Endpoint with correct structured payload
         export_payload = {
-            "jira_domain": "test-jira",
-            "jira_email": "qa@company.com",
-            "jira_token": "token123",
-            "jira_project": "QA"
+            "target": "jira",
+            "credentials": {
+                "jira_domain": "test-jira",
+                "jira_email": "qa@company.com",
+                "jira_token": "token123",
+                "jira_project": "QA"
+            }
         }
 
         response = self.client.post(f"/api/bug-reporter/export/{bug.id}", json=export_payload)
@@ -141,9 +144,9 @@ class TestPhase4BugReporter(unittest.TestCase):
 
         # 4. Check JIRA mappings
         res_data = response.json()
-        self.assertEqual(res_data["jira_key"], "QA-101")
+        self.assertEqual(res_data["ticket_key"], "QA-101")
         self.assertEqual(res_data["status"], "submitted_to_jira")
-        self.assertEqual(res_data["jira_url"], "https://test-jira.atlassian.net/browse/QA-101")
+        self.assertEqual(res_data["ticket_url"], "https://test-jira.atlassian.net/browse/QA-101")
 
         # Check DB updated state after refreshing session cache
         self.db.expire_all()

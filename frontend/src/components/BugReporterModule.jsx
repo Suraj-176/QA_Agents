@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import axios from 'axios'
-import { Bug, Upload, RefreshCw, Send, AlertCircle, CheckCircle, ExternalLink, Trash, Image as ImageIcon } from 'lucide-react'
+import { Bug, Upload, RefreshCw, Send, CheckCircle, ExternalLink, Trash, Image as ImageIcon } from 'lucide-react'
 
 const API_BASE_URL = 'http://127.0.0.1:5000/api'
 const STATIC_URL = 'http://127.0.0.1:5000/static'
@@ -57,7 +57,7 @@ function BugReporterModule() {
 
   const handleAnalyze = async (e) => {
     e.preventDefault()
-    if (!screenshotFile) return
+    if (!screenshotFile && !userRemarks.trim()) return
 
     // Extract LLM credentials from localStorage
     const provider = localStorage.getItem('llm_provider') || 'gemini'
@@ -71,7 +71,9 @@ function BugReporterModule() {
 
     setAnalyzing(true)
     const formData = new FormData()
-    formData.append('file', screenshotFile)
+    if (screenshotFile) {
+      formData.append('file', screenshotFile)
+    }
     formData.append('description', userRemarks)
 
     try {
@@ -102,31 +104,80 @@ function BugReporterModule() {
     }
   }
 
-  const handleExportToJira = async () => {
+  const handleExportToTracker = async () => {
     if (!activeReport) return
 
-    // Extract Jira credentials from localStorage
-    const domain = localStorage.getItem('jira_domain')
-    const email = localStorage.getItem('jira_email')
-    const token = localStorage.getItem('jira_token')
-    const project = localStorage.getItem('jira_project')
+    const target = localStorage.getItem('bug_export_target') || 'jira'
+    let credentials = {}
 
-    if (!domain || !email || !token || !project) {
-      alert('JIRA integration details are missing. Please configure them in your Configuration Panel first.')
-      return
+    // Parse credentials dynamically based on active target platform
+    if (target === 'jira') {
+      const domain = localStorage.getItem('jira_domain')
+      const email = localStorage.getItem('jira_email')
+      const token = localStorage.getItem('jira_token')
+      const project = localStorage.getItem('jira_project')
+
+      if (!domain || !email || !token || !project) {
+        alert('Atlassian JIRA integration credentials are incomplete. Please configure them in your Configuration Panel first.')
+        return
+      }
+      credentials = {
+        jira_domain: domain,
+        jira_email: email,
+        jira_token: token,
+        jira_project: project
+      }
+    } else if (target === 'azure_devops') {
+      const org = localStorage.getItem('ado_org')
+      const proj = localStorage.getItem('ado_proj')
+      const pat = localStorage.getItem('ado_pat')
+
+      if (!org || !proj || !pat) {
+        alert('Azure DevOps Boards credentials are incomplete. Please configure them in your Configuration Panel first.')
+        return
+      }
+      credentials = {
+        organization: org,
+        project: proj,
+        personal_access_token: pat
+      }
+    } else if (target === 'github') {
+      const owner = localStorage.getItem('github_owner')
+      const repo = localStorage.getItem('github_repo')
+      const pat = localStorage.getItem('github_pat')
+
+      if (!owner || !repo || !pat) {
+        alert('GitHub repository credentials are incomplete. Please configure them in your Configuration Panel first.')
+        return
+      }
+      credentials = {
+        owner: owner,
+        repo: repo,
+        personal_access_token: pat
+      }
+    } else if (target === 'gitlab') {
+      const projId = localStorage.getItem('gitlab_project_id')
+      const pat = localStorage.getItem('gitlab_pat')
+
+      if (!projId || !pat) {
+        alert('GitLab project credentials are incomplete. Please configure them in your Configuration Panel first.')
+        return
+      }
+      credentials = {
+        project_id: projId,
+        personal_access_token: pat
+      }
     }
 
     setExporting(true)
     try {
       await axios.post(`${API_BASE_URL}/bug-reporter/export/${activeReport.id}`, {
-        jira_domain: domain,
-        jira_email: email,
-        jira_token: token,
-        jira_project: project
+        target: target,
+        credentials: credentials
       })
       await fetchReportDetails(activeReport.id)
     } catch (err) {
-      alert(`JIRA filing failed: ${err.response?.data?.detail || err.message}`)
+      alert(`Publication failed: ${err.response?.data?.detail || err.message}`)
     } finally {
       setExporting(false)
     }
@@ -156,24 +207,36 @@ function BugReporterModule() {
 
         {/* Upload Screenshot Form */}
         <form onSubmit={handleAnalyze} className="space-y-4 bg-gray-950 p-4 border border-gray-800/60 rounded-xl">
-          <p className="text-xs font-bold uppercase tracking-wider text-indigo-400">File New Visual Bug</p>
+          <p className="text-xs font-bold uppercase tracking-wider text-indigo-400">File New Bug Report</p>
           
           <div className="border border-dashed border-gray-800 rounded-xl aspect-video relative flex flex-col items-center justify-center overflow-hidden hover:border-indigo-500/40 transition-colors bg-gray-900/50">
             {screenshotPreview ? (
-              <img src={screenshotPreview} alt="Screenshot preview" className="w-full h-full object-cover" />
+              <div className="relative w-full h-full group select-none">
+                <img src={screenshotPreview} alt="Screenshot preview" className="w-full h-full object-cover" />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setScreenshotFile(null)
+                    setScreenshotPreview(null)
+                  }}
+                  className="absolute top-2 right-2 bg-red-600 hover:bg-red-500 text-white rounded-lg px-3 py-1.5 text-[10px] font-bold transition-all shadow-md opacity-0 group-hover:opacity-100"
+                >
+                  Clear Screen
+                </button>
+              </div>
             ) : (
               <label className="cursor-pointer flex flex-col items-center justify-center p-6 text-center space-y-2 h-full w-full select-none">
                 <Upload className="text-gray-500" size={24} />
                 <span className="text-xs font-semibold text-gray-300">Drag or Upload Screenshot</span>
-                <span className="text-[10px] text-gray-500">Supports PNG, JPG (Max 5MB)</span>
-                <input type="file" accept="image/*" onChange={handleFileChange} className="hidden" required />
+                <span className="text-[10px] text-gray-500">Optional | Supports PNG, JPG (Max 5MB)</span>
+                <input type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
               </label>
             )}
           </div>
 
           <div className="space-y-1">
             <textarea
-              placeholder="Enter optional remarks or manual context..."
+              placeholder="Enter bug description or context (mandatory if no screenshot is uploaded)..."
               value={userRemarks}
               onChange={(e) => setUserRemarks(e.target.value)}
               rows={3}
@@ -183,8 +246,8 @@ function BugReporterModule() {
           </div>
           <button
             type="submit"
-            disabled={analyzing || !screenshotFile}
-            className="w-full bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold py-2.5 rounded-lg flex items-center justify-center gap-1.5 active:scale-[0.98] transition-all disabled:opacity-50 disabled:pointer-events-none"
+            disabled={analyzing || (!screenshotFile && !userRemarks.trim())}
+            className="w-full bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold py-2.5 rounded-lg flex items-center justify-center gap-1.5 active:scale-[0.98] transition-all disabled:opacity-50 disabled:pointer-events-none animate-pulse-subtle"
           >
             {analyzing ? (
               <>
@@ -194,7 +257,7 @@ function BugReporterModule() {
             ) : (
               <>
                 <Send size={14} />
-                <span>Audit Screenshot</span>
+                <span>Audit and Draft Bug</span>
               </>
             )}
           </button>
@@ -229,23 +292,25 @@ function BugReporterModule() {
       {/* Main Panel: Report details viewer */}
       <div className="col-span-8">
         {activeReport ? (
-          <div className="grid grid-cols-2 gap-8">
-            {/* Visual Screenshot Display */}
-            <div className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden shadow-sm h-fit">
-              <div className="p-4 border-b border-gray-800 flex items-center justify-between bg-gray-900/50 select-none">
-                <span className="text-xs font-bold text-gray-300 flex items-center gap-1.5">
-                  <ImageIcon size={14} className="text-indigo-400" />
-                  <span>Audited Screenshot</span>
-                </span>
+          <div className={`grid ${activeReport.screenshot_path ? 'grid-cols-2' : 'grid-cols-1'} gap-8 animate-fadeIn`}>
+            {/* Visual Screenshot Display (Conditionally rendered only if a screenshot was uploaded) */}
+            {activeReport.screenshot_path && (
+              <div className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden shadow-sm h-fit">
+                <div className="p-4 border-b border-gray-800 flex items-center justify-between bg-gray-900/50 select-none">
+                  <span className="text-xs font-bold text-gray-300 flex items-center gap-1.5">
+                    <ImageIcon size={14} className="text-indigo-400" />
+                    <span>Audited Screenshot</span>
+                  </span>
+                </div>
+                <div className="bg-black/20 flex items-center justify-center p-4">
+                  <img
+                    src={`${STATIC_URL}/${activeReport.screenshot_path}`}
+                    alt="Visual audit reference"
+                    className="max-h-[360px] w-full object-contain rounded-lg border border-gray-800"
+                  />
+                </div>
               </div>
-              <div className="bg-black/20 flex items-center justify-center p-4">
-                <img
-                  src={`${STATIC_URL}/${activeReport.screenshot_path}`}
-                  alt="Visual audit reference"
-                  className="max-h-[360px] w-full object-contain rounded-lg border border-gray-800"
-                />
-              </div>
-            </div>
+            )}
 
             {/* AI Vision analysis details and Export */}
             <div className="bg-gray-900 border border-gray-800 rounded-2xl p-8 space-y-6 h-fit">
@@ -261,7 +326,7 @@ function BugReporterModule() {
                       {activeReport.severity}
                     </span>
                     <span className="text-[10px] uppercase tracking-wider font-semibold text-gray-500 bg-gray-950 border border-gray-800 px-2.5 py-0.5 rounded-full">
-                      {activeReport.status.replace('_', ' ')}
+                      {activeReport.status.replace(/submitted_to_/g, '').replace(/_/g, ' ')}
                     </span>
                   </div>
                 </div>
@@ -273,23 +338,23 @@ function BugReporterModule() {
                 </button>
               </div>
 
-              {/* JIRA Publishing section */}
+              {/* Universal Connected Exporter section */}
               <div className="space-y-4">
-                {activeReport.status === 'submitted_to_jira' ? (
+                {activeReport.status !== 'draft' ? (
                   <div className="p-4 bg-emerald-500/5 border border-emerald-500/10 rounded-xl space-y-3">
-                    <p className="text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
+                    <p className="text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5 select-none">
                       <CheckCircle size={14} />
-                      <span>Successfully Posted to JIRA</span>
+                      <span>Successfully Published Bug</span>
                     </p>
                     <p className="text-xs text-emerald-300/80 leading-relaxed">
-                      This visual bug has been created as an issue ticket in Atlassian JIRA. 
+                      This bug audit has been successfully posted as an issue ticket to your configured tracker. 
                       You can trace or modify it directly in your workspace browser.
                     </p>
                     <a
                       href={activeReport.jira_url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-4 py-2.5 rounded-lg flex items-center justify-center gap-1.5 transition-all select-none w-full"
+                      className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-4 py-2.5 rounded-lg flex items-center justify-center gap-1.5 transition-all select-none w-full shadow-lg shadow-emerald-500/5"
                     >
                       <span>View Ticket {activeReport.jira_key}</span>
                       <ExternalLink size={12} />
@@ -297,25 +362,25 @@ function BugReporterModule() {
                   </div>
                 ) : (
                   <div className="p-4 bg-gray-950 border border-gray-800/80 rounded-xl space-y-3">
-                    <p className="text-xs font-bold uppercase tracking-wider text-gray-400">Jira Publishing</p>
+                    <p className="text-xs font-bold uppercase tracking-wider text-gray-400 select-none">Bug Tracker Exporter</p>
                     <p className="text-xs text-gray-500 leading-relaxed">
-                      Publish this structural layout audit as a Bug Ticket in your company JIRA Cloud project. 
-                      The audited layout screenshot will automatically be uploaded as an attachment.
+                      Publish this bug report directly to your active connected issue tracking board. 
+                      {activeReport.screenshot_path ? " The visual screenshot attachment will automatically be uploaded if supported." : " No attachment will be sent since this is a text-only bug."}
                     </p>
                     <button
-                      onClick={handleExportToJira}
+                      onClick={handleExportToTracker}
                       disabled={exporting}
-                      className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs px-4 py-2.5 rounded-lg flex items-center justify-center gap-1.5 transition-all w-full active:scale-[0.98]"
+                      className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs px-4 py-2.5 rounded-lg flex items-center justify-center gap-1.5 transition-all w-full active:scale-[0.98] shadow-lg shadow-indigo-500/5"
                     >
                       {exporting ? (
                         <>
                           <RefreshCw size={12} className="animate-spin" />
-                          <span>Publishing Issue...</span>
+                          <span>Publishing Bug...</span>
                         </>
                       ) : (
                         <>
                           <Send size={12} />
-                          <span>Publish to JIRA Cloud</span>
+                          <span>Publish to Connected Tracker</span>
                         </>
                       )}
                     </button>
@@ -325,7 +390,7 @@ function BugReporterModule() {
 
               {/* Description visual audit output */}
               <div className="space-y-4 bg-gray-950 border border-gray-800/80 p-5 rounded-xl max-h-[250px] overflow-y-auto">
-                <p className="text-xs font-bold uppercase tracking-wider text-indigo-400 border-b border-gray-800/60 pb-2">Layout Audit Log</p>
+                <p className="text-xs font-bold uppercase tracking-wider text-indigo-400 border-b border-gray-800/60 pb-2 select-none">Layout Audit Log</p>
                 <p className="text-xs text-gray-300 leading-relaxed font-mono whitespace-pre-line">{activeReport.description.replace(/h3\. /g, '\n\n**').replace(/\n\n\*\*/, '**')}</p>
               </div>
             </div>
@@ -334,7 +399,7 @@ function BugReporterModule() {
           <div className="bg-gray-900 border border-gray-800 rounded-2xl p-12 text-center text-gray-500 select-none">
             <Bug size={48} className="mx-auto text-gray-700 mb-4" />
             <h4 className="font-bold text-gray-300 text-lg">No Active Bug Selected</h4>
-            <p className="text-sm text-gray-500 max-w-sm mx-auto mt-1 leading-relaxed">Upload a UI layout screenshot or choose an active bug audit from the sidebar to inspect visual details.</p>
+            <p className="text-sm text-gray-500 max-w-sm mx-auto mt-1 leading-relaxed">Upload a UI layout screenshot or type in a text-only bug description on the sidebar to audit and draft bug details.</p>
           </div>
         )}
       </div>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import axios from 'axios'
-import { ClipboardList, Play, Trash, ChevronDown, ChevronUp, FileText, CheckCircle2 } from 'lucide-react'
+import { ClipboardList, Play, Trash, ChevronDown, ChevronUp, FileText, CheckCircle2, RefreshCw, Download } from 'lucide-react'
 
 const API_BASE_URL = 'http://127.0.0.1:5000/api'
 
@@ -13,6 +13,7 @@ function TestCaseModule() {
   // Input states
   const [reqTitle, setReqTitle] = useState('')
   const [requirements, setRequirements] = useState('')
+  const [mode, setMode] = useState('combined')
 
   // Accordion active state for test cases
   const [expandedCaseId, setExpandedCaseId] = useState(null)
@@ -65,7 +66,8 @@ function TestCaseModule() {
         `${API_BASE_URL}/test-cases/generate`,
         {
           requirements: requirements,
-          title: reqTitle || undefined
+          title: reqTitle || undefined,
+          mode: mode
         },
         {
           headers: {
@@ -105,6 +107,46 @@ function TestCaseModule() {
     setExpandedCaseId(expandedCaseId === id ? null : id)
   }
 
+  const handleExportToCSV = () => {
+    if (!activeSuite || !activeSuite.test_cases) return
+
+    // Define CSV Headers
+    const headers = ["Test ID", "Title", "Priority", "Description", "Preconditions", "Steps", "Expected Result"]
+    
+    // Format rows
+    const rows = activeSuite.test_cases.map(tc => {
+      const stepsText = tc.steps ? tc.steps.join(" | ") : ""
+      
+      const escapeCSV = (val) => {
+        if (val === null || val === undefined) return '""'
+        const str = String(val).replace(/"/g, '""')
+        return `"${str}"`
+      }
+
+      return [
+        escapeCSV(tc.test_id),
+        escapeCSV(tc.title),
+        escapeCSV(tc.priority),
+        escapeCSV(tc.description),
+        escapeCSV(tc.preconditions),
+        escapeCSV(stepsText),
+        escapeCSV(tc.expected_result)
+      ].join(",")
+    })
+
+    // Prepend UTF-8 Byte Order Mark (BOM) so Excel opens special characters cleanly
+    const csvContent = "\uFEFF" + [headers.join(","), ...rows].join("\n")
+    
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement("a")
+    link.setAttribute("href", url)
+    link.setAttribute("download", `${activeSuite.title.replace(/\s+/g, "_")}_test_cases.csv`)
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+
   return (
     <div className="grid grid-cols-12 gap-8 animate-fadeIn">
       {/* Sidebar: Test suites list */}
@@ -128,6 +170,18 @@ function TestCaseModule() {
               className="w-full bg-gray-900 border border-gray-800/80 rounded-lg px-3 py-2.5 text-xs text-gray-200 focus:outline-none focus:border-indigo-500"
               disabled={generating}
             />
+          </div>
+          <div className="space-y-1">
+            <select
+              value={mode}
+              onChange={(e) => setMode(e.target.value)}
+              className="w-full bg-gray-900 border border-gray-800/80 rounded-lg px-3 py-2.5 text-xs text-gray-255 focus:outline-none focus:border-indigo-500 cursor-pointer text-gray-300"
+              disabled={generating}
+            >
+              <option value="combined">Combined (UI + Functional)</option>
+              <option value="ui">UI Only (Visual & Presentation)</option>
+              <option value="functional">Functional Only (Logic & API)</option>
+            </select>
           </div>
           <div className="space-y-1">
             <textarea
@@ -194,13 +248,23 @@ function TestCaseModule() {
                 <h3 className="font-bold text-lg text-white">{activeSuite.title}</h3>
                 <p className="text-xs text-gray-500 mt-1">Created on: {new Date(activeSuite.created_at).toLocaleString()}</p>
               </div>
-              <button
-                onClick={() => handleDeleteSuite(activeSuite.id)}
-                className="bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 text-rose-400 p-2.5 rounded-xl transition-all active:scale-[0.96]"
-                title="Delete Test Suite"
-              >
-                <Trash size={16} />
-              </button>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={handleExportToCSV}
+                  className="bg-indigo-600/10 hover:bg-indigo-600/20 border border-indigo-500/20 text-indigo-400 px-4 py-2.5 rounded-xl transition-all active:scale-[0.96] flex items-center gap-2 text-xs font-bold"
+                  title="Export Test Cases to Excel (CSV)"
+                >
+                  <Download size={14} />
+                  <span>Export to Excel (CSV)</span>
+                </button>
+                <button
+                  onClick={() => handleDeleteSuite(activeSuite.id)}
+                  className="bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 text-rose-400 p-2.5 rounded-xl transition-all active:scale-[0.96]"
+                  title="Delete Test Suite"
+                >
+                  <Trash size={16} />
+                </button>
+              </div>
             </div>
 
             {/* Accordion Test Cases list */}

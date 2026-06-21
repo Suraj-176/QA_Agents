@@ -1,3 +1,4 @@
+import os
 import json
 import re
 from sqlalchemy.orm import Session
@@ -17,6 +18,35 @@ class TestCaseGeneratorService:
         # If no markdown block, return raw text directly
         return raw_text
 
+    def _load_prompt_by_type(self, mode: str) -> str:
+        """
+        Dynamically loads independent prompt text files from backend/app/prompts/ folder.
+        """
+        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        
+        # Determine target file
+        mode_clean = mode.lower().strip()
+        filename = "CombinedPrompt.txt" # Default fallback
+        if mode_clean == "ui":
+            filename = "UIPrompt.txt"
+        elif mode_clean == "functional":
+            filename = "FunctionalPrompt.txt"
+            
+        filepath = os.path.join(base_dir, "prompts", filename)
+        
+        try:
+            with open(filepath, "r", encoding="utf-8") as f:
+                return f.read().strip()
+        except Exception:
+            pass
+
+        # absolute fallback if file read fails
+        return """
+        Generate a comprehensive, professional suite of test cases to thoroughly verify these requirements:
+        {requirements}
+        Return ONLY a JSON array containing a title string and a test_cases list with test_id, title, description, preconditions, steps, expected_result, and priority.
+        """
+
     async def generate_suite_from_requirements(
         self, 
         requirements_content: str, 
@@ -24,46 +54,16 @@ class TestCaseGeneratorService:
         provider: str, 
         model: str, 
         api_key: str, 
-        db: Session
+        db: Session,
+        mode: str = "combined"
     ) -> dict:
         """
-        Parses requirements using an LLM provider and populates a TestCaseSuite and TestCases in the database.
+        Loads the configured prompt from prompts folder based on mode, 
+        pipes it to the LLM, and populates SQLite test suites and cases.
         """
-        prompt = f"""
-        You are an expert QA Automation and Manual Testing Architect.
-        Analyze the following functional requirements or user story:
-        
-        ---
-        {requirements_content}
-        ---
-        
-        Generate a comprehensive, professional suite of test cases to thoroughly verify these requirements. 
-        Your output MUST be a valid JSON object matching the following structure EXACTLY:
-        
-        {{
-            "title": "Name of the Test Suite",
-            "test_cases": [
-                {{
-                    "test_id": "TC-001",
-                    "title": "Clear concise summary of what is being tested",
-                    "description": "Detailed explanation of the test objective",
-                    "preconditions": "Preconditions required for the test (nullable)",
-                    "steps": [
-                        "Step 1: Action to perform",
-                        "Step 2: Action to perform"
-                    ],
-                    "expected_result": "Detailed expectation of success",
-                    "priority": "High" or "Medium" or "Low"
-                }}
-            ]
-        }}
-        
-        Ensure:
-        1. All critical edge cases, boundary conditions, happy paths, and error states are covered.
-        2. Steps are actionable and logical.
-        3. Priorities are accurately set based on user-impact.
-        4. Return ONLY the JSON object. Do not include introductory text, side notes, or conversational postambles.
-        """
+        # Load isolated prompt and inject requirements
+        base_prompt_template = self._load_prompt_by_type(mode)
+        prompt = base_prompt_template.replace("{requirements}", requirements_content)
         
         # Call LLM Adapter dynamically
         raw_llm_output = await LLMAdapter.generate_text(
@@ -81,7 +81,7 @@ class TestCaseGeneratorService:
             raise ValueError(f"LLM did not return a valid JSON payload: {str(e)}\nRaw Output: {raw_llm_output}")
 
         # Ensure suite title has a fallback
-        suite_title = parsed_data.get("title") or title or "Generated Test Suite"
+        suite_title = parsed_data.get("title") or title or f"Generated {mode.upper()} Suite"
         test_cases_list = parsed_data.get("test_cases", [])
 
         # Write to Database

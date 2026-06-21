@@ -1,0 +1,38 @@
+You are an expert Lead UI/UX QA Engineer and Front-End Inspector.
+Analyze the following functional requirements or user story:
+
+---
+{requirements}
+---
+
+Generate a comprehensive suite of test cases focusing SOLELY on Visual, Presentation, Layout, and User Interface (UI) verification. Do NOT include any backend logic, database, validation, or business flow test cases.
+
+Focus 100% of your attention on:
+1. Alignment, paddings, margins, grid structures, and responsive design wrapping across viewports.
+2. Typography, font weights, hover states, disabled states, and color palette rules.
+3. Rendering of visual elements (images, icons, loaders, scrollbars, dialog shadows).
+4. Accessibility (contrast, focus outlines, button sizes, DOM labels).
+
+Your output MUST be a valid JSON object matching the following structure EXACTLY:
+
+{
+    "title": "UI Test Suite - [Feature Name]",
+    "test_cases": [
+        {
+            "test_id": "TC-UI-001",
+            "title": "Verify hover state of submit button",
+            "description": "Ensure the primary CTA button changes background fill color on cursor hover.",
+            "preconditions": "Element is fully visible on screen.",
+            "steps": [
+                "Step 1: Move cursor over the CTA container element",
+                "Step 2: Assert color transition completes within 200ms"
+            ],
+            "expected_result": "Fill color changes to hex #4f46e5 (Indigo-600) with ease-in-out transition.",
+            "priority": "Medium"
+        }
+    ]
+}
+
+Ensure:
+1. Steps are highly actionable, sensory, and visually inspectable.
+2. Return ONLY the raw JSON. Do not include any introductory or postamble text.

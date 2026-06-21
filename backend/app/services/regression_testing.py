@@ -69,26 +69,31 @@ class RegressionTestingService:
         """
         Launches Playwright headless browser and captures mobile, tablet, and desktop views.
         """
+        # Automatically prepend http:// if protocol is missing (e.g. www.google.com)
+        url = url.strip()
+        if not (url.startswith("http://") or url.startswith("https://")):
+            url = "http://" + url
+
         os.makedirs(base_folder, exist_ok=True)
         captured_paths = {}
 
         async with async_playwright() as p:
             browser = await p.chromium.launch(headless=True)
-            page = await browser.new_page()
+            page = await browser.new_page(ignore_https_errors=True)
 
             for name, viewport in VIEWPORTS.items():
                 await page.set_viewport_size(viewport)
                 
                 try:
-                    # Navigate and wait for network stability to ensure complete rendering
-                    await page.goto(url, timeout=30000, wait_until="networkidle")
+                    # Navigate and wait for standard page load (ignores busy network trackers)
+                    await page.goto(url, timeout=20000, wait_until="load")
                 except Exception as goto_err:
-                    # Fallback to domcontentloaded if network stays busy
+                    # Fallback to domcontentloaded if stylesheets or images take too long
                     try:
-                        await page.goto(url, timeout=30000, wait_until="domcontentloaded")
-                    except Exception:
+                        await page.goto(url, timeout=15000, wait_until="domcontentloaded")
+                    except Exception as fallback_err:
                         await browser.close()
-                        raise RuntimeError(f"Failed to load website {url}: {str(goto_err)}")
+                        raise RuntimeError(f"Failed to load website {url}: {str(fallback_err)}")
 
                 # Small delay for web font/animation layout stabilization
                 await page.wait_for_timeout(1000)

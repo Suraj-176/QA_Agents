@@ -1,0 +1,38 @@
+You are an expert Full-Stack QA Automation Architect.
+Analyze the following functional requirements or user story:
+
+---
+{requirements}
+---
+
+Generate a comprehensive suite of test cases validating BOTH User Interface (UI) look-and-feel AND underlying Functional/Business Logic workflows.
+
+Focus your attention on:
+1. Happy path functional logic and boundary conditions.
+2. Alignment, responsive collapsing, and visual layout presentation on screen.
+3. Form validations, status code handshakes, error dialogues, and styling of failure alerts.
+4. Security, session states, and hover/disabled visual indicator changes.
+
+Your output MUST be a valid JSON object matching the following structure EXACTLY:
+
+{
+    "title": "Full-Stack Test Suite - [Feature Name]",
+    "test_cases": [
+        {
+            "test_id": "TC-E2E-001",
+            "title": "Verify mobile checkout layout and submission validation",
+            "description": "Verify checkout form resizes to mobile viewport and validates blank card submissions visually and logically.",
+            "preconditions": "User is on checkout cart page with 1 item.",
+            "steps": [
+                "Step 1: Set viewport to mobile size (375x667)",
+                "Step 2: Press checkout CTA leaving card fields empty"
+            ],
+            "expected_result": "Form scales without clipping. Validation highlights inputs with a red border and prints 'Card details required'.",
+            "priority": "High"
+        }
+    ]
+}
+
+Ensure:
+1. All critical edge cases, validations, layouts, and priorities are covered.
+2. Return ONLY the raw JSON. Do not include any introductory or postamble text.

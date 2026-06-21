@@ -1,5 +1,5 @@
-import React, { useState } from 'react'
-import { LayoutDashboard, Eye, ClipboardList, Bug, Settings as SettingsIcon } from 'lucide-react'
+import React, { useState, useEffect } from 'react'
+import { LayoutDashboard, Eye, ClipboardList, Bug, Settings as SettingsIcon, Sun, Moon, ChevronLeft, ChevronRight } from 'lucide-react'
 
 // Components
 import Dashboard from './components/Dashboard'
@@ -10,108 +10,212 @@ import Settings from './components/Settings'
 
 function App() {
   const [activeTab, setActiveTab] = useState('dashboard')
+  const [theme, setTheme] = useState(localStorage.getItem('theme') || 'dark')
+  
+  // Sidebar collapsible state persisted in local storage
+  const [isCollapsed, setIsCollapsed] = useState(localStorage.getItem('sidebar_collapsed') === 'true')
+
+  useEffect(() => {
+    localStorage.setItem('theme', theme)
+  }, [theme])
+
+  useEffect(() => {
+    localStorage.setItem('sidebar_collapsed', isCollapsed)
+  }, [isCollapsed])
+
+  const toggleTheme = () => {
+    setTheme(theme === 'dark' ? 'light' : 'dark')
+  }
+
+  const toggleSidebar = () => {
+    setIsCollapsed(!isCollapsed)
+  }
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-gray-950 text-gray-100 font-sans">
+    <div className={`${theme === 'dark' ? 'dark' : ''} flex h-screen w-screen overflow-hidden bg-slate-50 dark:bg-gray-950 text-slate-800 dark:text-gray-100 font-sans transition-colors duration-200`}>
       {/* Sidebar navigation */}
-      <aside className="w-72 bg-gray-900 border-r border-gray-800 flex flex-col shrink-0 select-none">
-        {/* Brand Header */}
-        <div className="h-20 flex items-center px-6 gap-3 border-b border-gray-800 shrink-0">
-          <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center font-bold text-xl text-white shadow-lg shadow-indigo-500/20">
-            QA
+      <aside className={`${isCollapsed ? 'w-20' : 'w-72'} bg-white dark:bg-gray-900 border-r border-slate-200 dark:border-gray-800 flex flex-col shrink-0 select-none transition-all duration-300 relative`}>
+        
+        {/* Brand Header with Interactive Logo Toggle */}
+        <div className={`h-20 flex items-center border-b border-slate-200 dark:border-gray-800 shrink-0 relative overflow-hidden transition-all ${
+          isCollapsed ? 'justify-center px-0' : 'px-6 justify-start gap-3.5'
+        }`}>
+          {/* Interactive Toggle Logo */}
+          <div 
+            onClick={toggleSidebar}
+            className="w-10 h-10 bg-indigo-600 hover:bg-indigo-500 rounded-xl flex items-center justify-center font-bold text-xl text-white shadow-lg shadow-indigo-500/20 shrink-0 select-none cursor-pointer transition-all duration-200 group"
+            title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+          >
+            {/* Show 'QA' text by default, show arrow icon on hover */}
+            <span className="block group-hover:hidden select-none animate-fadeIn">QA</span>
+            <span className="hidden group-hover:block select-none animate-fadeIn">
+              {isCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+            </span>
           </div>
-          <div>
-            <h1 className="font-bold text-lg leading-tight tracking-wide text-white">QA.AI Platform</h1>
-            <p className="text-xs text-indigo-400 font-medium tracking-wider uppercase">Smart Testing Suite</p>
-          </div>
+
+          {!isCollapsed && (
+            <div className="animate-fadeIn">
+              <h1 className="font-bold text-base leading-tight tracking-wide text-slate-900 dark:text-white">QA.AI Platform</h1>
+              <p className="text-[10px] text-indigo-500 dark:text-indigo-400 font-bold tracking-wider uppercase">Smart Testing Suite</p>
+            </div>
+          )}
         </div>
 
         {/* Navigation Items */}
-        <nav className="flex-1 py-6 px-4 space-y-1.5 overflow-y-auto">
+        <nav className={`flex-1 py-6 px-3 space-y-1.5 ${isCollapsed ? '' : 'overflow-y-auto'}`}>
+          {/* Item 1: Dashboard */}
           <button
             onClick={() => setActiveTab('dashboard')}
-            className={`flex items-center gap-3.5 w-full px-4 py-3 rounded-xl font-medium text-sm transition-all duration-200 ${
+            className={`group relative flex items-center rounded-xl font-medium text-sm transition-all duration-200 w-full ${
+              isCollapsed ? 'p-3.5 justify-center' : 'px-4 py-3 justify-start gap-3.5'
+            } ${
               activeTab === 'dashboard'
-                ? 'bg-indigo-600/10 text-indigo-400 border border-indigo-500/20 font-semibold shadow-inner shadow-indigo-500/5'
-                : 'text-gray-400 hover:bg-gray-800/50 hover:text-gray-200'
+                ? 'bg-indigo-600/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 dark:border-indigo-500/10 font-semibold shadow-inner'
+                : 'text-slate-500 dark:text-gray-400 hover:bg-slate-100 dark:hover:bg-gray-800/50 hover:text-slate-800 dark:hover:text-gray-200 border border-transparent'
             }`}
           >
-            <LayoutDashboard size={18} />
-            <span>📊 Dashboard Overview</span>
+            <LayoutDashboard size={18} className="shrink-0" />
+            {!isCollapsed && <span className="animate-fadeIn">📊 Dashboard Overview</span>}
+            
+            {/* Custom Tailwind hover tooltip when collapsed */}
+            {isCollapsed && (
+              <span className="absolute left-16 scale-0 group-hover:scale-100 transition-all duration-150 rounded-lg bg-gray-900 border border-gray-800 p-2.5 text-xs text-white font-semibold shadow-xl pointer-events-none select-none z-50 whitespace-nowrap">
+                📊 Dashboard Overview
+              </span>
+            )}
           </button>
 
+          {/* Item 2: Regression */}
           <button
             onClick={() => setActiveTab('regression')}
-            className={`flex items-center gap-3.5 w-full px-4 py-3 rounded-xl font-medium text-sm transition-all duration-200 ${
+            className={`group relative flex items-center rounded-xl font-medium text-sm transition-all duration-200 w-full ${
+              isCollapsed ? 'p-3.5 justify-center' : 'px-4 py-3 justify-start gap-3.5'
+            } ${
               activeTab === 'regression'
-                ? 'bg-indigo-600/10 text-indigo-400 border border-indigo-500/20 font-semibold shadow-inner shadow-indigo-500/5'
-                : 'text-gray-400 hover:bg-gray-800/50 hover:text-gray-200'
+                ? 'bg-indigo-600/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 dark:border-indigo-500/10 font-semibold shadow-inner'
+                : 'text-slate-500 dark:text-gray-400 hover:bg-slate-100 dark:hover:bg-gray-800/50 hover:text-slate-800 dark:hover:text-gray-200 border border-transparent'
             }`}
           >
-            <Eye size={18} />
-            <span>🔍 Smart Visual testing</span>
+            <Eye size={18} className="shrink-0" />
+            {!isCollapsed && <span className="animate-fadeIn">🔍 Smart Visual testing</span>}
+            
+            {isCollapsed && (
+              <span className="absolute left-16 scale-0 group-hover:scale-100 transition-all duration-150 rounded-lg bg-gray-900 border border-gray-800 p-2.5 text-xs text-white font-semibold shadow-xl pointer-events-none select-none z-50 whitespace-nowrap">
+                🔍 Smart Visual testing
+              </span>
+            )}
           </button>
 
+          {/* Item 3: Test Case Generator */}
           <button
             onClick={() => setActiveTab('testcases')}
-            className={`flex items-center gap-3.5 w-full px-4 py-3 rounded-xl font-medium text-sm transition-all duration-200 ${
+            className={`group relative flex items-center rounded-xl font-medium text-sm transition-all duration-200 w-full ${
+              isCollapsed ? 'p-3.5 justify-center' : 'px-4 py-3 justify-start gap-3.5'
+            } ${
               activeTab === 'testcases'
-                ? 'bg-indigo-600/10 text-indigo-400 border border-indigo-500/20 font-semibold shadow-inner shadow-indigo-500/5'
-                : 'text-gray-400 hover:bg-gray-800/50 hover:text-gray-200'
+                ? 'bg-indigo-600/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 dark:border-indigo-500/10 font-semibold shadow-inner'
+                : 'text-slate-500 dark:text-gray-400 hover:bg-slate-100 dark:hover:bg-gray-800/50 hover:text-slate-800 dark:hover:text-gray-200 border border-transparent'
             }`}
           >
-            <ClipboardList size={18} />
-            <span>📋 Auto TestCase generator</span>
+            <ClipboardList size={18} className="shrink-0" />
+            {!isCollapsed && <span className="animate-fadeIn">📋 Auto TestCase generator</span>}
+            
+            {isCollapsed && (
+              <span className="absolute left-16 scale-0 group-hover:scale-100 transition-all duration-150 rounded-lg bg-gray-900 border border-gray-800 p-2.5 text-xs text-white font-semibold shadow-xl pointer-events-none select-none z-50 whitespace-nowrap">
+                📋 Auto TestCase generator
+              </span>
+            )}
           </button>
 
+          {/* Item 4: Bug Reporter */}
           <button
             onClick={() => setActiveTab('bugreporter')}
-            className={`flex items-center gap-3.5 w-full px-4 py-3 rounded-xl font-medium text-sm transition-all duration-200 ${
+            className={`group relative flex items-center rounded-xl font-medium text-sm transition-all duration-200 w-full ${
+              isCollapsed ? 'p-3.5 justify-center' : 'px-4 py-3 justify-start gap-3.5'
+            } ${
               activeTab === 'bugreporter'
-                ? 'bg-indigo-600/10 text-indigo-400 border border-indigo-500/20 font-semibold shadow-inner shadow-indigo-500/5'
-                : 'text-gray-400 hover:bg-gray-800/50 hover:text-gray-200'
+                ? 'bg-indigo-600/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 dark:border-indigo-500/10 font-semibold shadow-inner'
+                : 'text-slate-500 dark:text-gray-400 hover:bg-slate-100 dark:hover:bg-gray-800/50 hover:text-slate-800 dark:hover:text-gray-200 border border-transparent'
             }`}
           >
-            <Bug size={18} />
-            <span>🐛 Visual Bug Reporter</span>
+            <Bug size={18} className="shrink-0" />
+            {!isCollapsed && <span className="animate-fadeIn">🐛 Visual Bug Reporter</span>}
+            
+            {isCollapsed && (
+              <span className="absolute left-16 scale-0 group-hover:scale-100 transition-all duration-150 rounded-lg bg-gray-900 border border-gray-800 p-2.5 text-xs text-white font-semibold shadow-xl pointer-events-none select-none z-50 whitespace-nowrap">
+                🐛 Visual Bug Reporter
+              </span>
+            )}
           </button>
         </nav>
 
         {/* Footer/Settings button */}
-        <div className="p-4 border-t border-gray-800 shrink-0 bg-gray-900/50">
-          <button
-            onClick={() => setActiveTab('settings')}
-            className={`flex items-center gap-3.5 w-full px-4 py-3.5 rounded-xl font-medium text-sm transition-all duration-200 ${
-              activeTab === 'settings'
-                ? 'bg-indigo-600/10 text-indigo-400 border border-indigo-500/20 font-semibold shadow-inner shadow-indigo-500/5'
-                : 'text-gray-400 hover:bg-gray-800/50 hover:text-gray-200'
-            }`}
-          >
-            <SettingsIcon size={18} />
-            <span>⚙️ Configuration Panel</span>
-          </button>
-        </div>
+        {!isCollapsed && (
+          <div className="p-4 border-t border-slate-200 dark:border-gray-800 shrink-0 bg-slate-50/50 dark:bg-gray-900/50 transition-colors duration-200">
+            <button
+              onClick={() => setActiveTab('settings')}
+              className={`flex items-center gap-3.5 w-full px-4 py-3.5 rounded-xl font-medium text-sm transition-all duration-200 ${
+                activeTab === 'settings'
+                  ? 'bg-indigo-600/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 dark:border-indigo-500/10 font-semibold shadow-inner'
+                  : 'text-slate-500 dark:text-gray-400 hover:bg-slate-100 dark:hover:bg-gray-800/50 hover:text-slate-800 dark:hover:text-gray-200'
+              }`}
+            >
+              <SettingsIcon size={18} />
+              <span>⚙️ Configuration Panel</span>
+            </button>
+          </div>
+        )}
+
+        {/* If collapsed, show settings as an icon only with tooltip */}
+        {isCollapsed && (
+          <div className="p-3.5 border-t border-slate-200 dark:border-gray-800 shrink-0 bg-slate-50/50 dark:bg-gray-900/50 flex justify-center transition-colors duration-200">
+            <button
+              onClick={() => setActiveTab('settings')}
+              className={`group relative p-3.5 rounded-xl font-medium text-sm transition-all duration-200 flex justify-center ${
+                activeTab === 'settings'
+                  ? 'bg-indigo-600/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 dark:border-indigo-500/10 font-semibold shadow-inner'
+                  : 'text-slate-500 dark:text-gray-400 hover:bg-slate-100 dark:hover:bg-gray-800/50 hover:text-slate-800 dark:hover:text-gray-200 border border-transparent'
+              }`}
+            >
+              <SettingsIcon size={18} className="shrink-0" />
+              <span className="absolute left-16 scale-0 group-hover:scale-100 transition-all duration-150 rounded-lg bg-gray-900 border border-gray-800 p-2.5 text-xs text-white font-semibold shadow-xl pointer-events-none select-none z-50 whitespace-nowrap">
+                ⚙️ Configuration Panel
+              </span>
+            </button>
+          </div>
+        )}
       </aside>
 
       {/* Main viewport area */}
-      <main className="flex-1 flex flex-col h-full overflow-hidden bg-gray-950">
-        <header className="h-20 bg-gray-900 border-b border-gray-800 px-8 flex items-center justify-between shrink-0 select-none">
-          <h2 className="text-xl font-bold tracking-tight text-white capitalize">
+      <main className="flex-1 flex flex-col h-full overflow-hidden bg-slate-50 dark:bg-gray-950 transition-colors duration-200">
+        <header className="h-20 bg-white dark:bg-gray-900 border-b border-slate-200 dark:border-gray-800 px-8 flex items-center justify-between shrink-0 select-none transition-colors duration-200">
+          <h2 className="text-xl font-bold tracking-tight text-slate-800 dark:text-white capitalize">
             {activeTab === 'testcases' ? 'Auto TestCase generator' : activeTab === 'bugreporter' ? 'Visual Bug Reporter' : activeTab === 'regression' ? 'Smart Visual testing' : activeTab === 'settings' ? 'Configuration Panel' : 'Dashboard Overview'}
           </h2>
-          <div className="flex items-center gap-4">
-            <span className="flex h-2.5 w-2.5 relative">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-            </span>
-            <span className="text-xs font-semibold uppercase tracking-wider text-emerald-500 bg-emerald-500/5 border border-emerald-500/10 px-3 py-1 rounded-full">
-              Live Core Engine Connected
-            </span>
+          <div className="flex items-center gap-6">
+            {/* Dynamic Theme Toggle Switch */}
+            <button
+              onClick={toggleTheme}
+              className="p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-slate-600 hover:text-slate-800 dark:text-gray-300 dark:hover:text-white transition-all active:scale-[0.95]"
+              title="Toggle Theme Mode"
+            >
+              {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+            </button>
+
+            <div className="flex items-center gap-4">
+              <span className="flex h-2.5 w-2.5 relative">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+              </span>
+              <span className="text-xs font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 bg-emerald-500/5 border border-emerald-500/10 px-3 py-1 rounded-full">
+                Live Core Engine Connected
+              </span>
+            </div>
           </div>
         </header>
 
         {/* Interactive Workspace Area */}
-        <section className="flex-1 overflow-y-auto p-8 max-w-[1600px] w-full mx-auto">
+        <section className="flex-1 overflow-y-auto p-8 max-w-[1600px] w-full mx-auto animate-fadeIn">
           {activeTab === 'dashboard' && <Dashboard setActiveTab={setActiveTab} />}
           {activeTab === 'regression' && <RegressionModule />}
           {activeTab === 'testcases' && <TestCaseModule />}

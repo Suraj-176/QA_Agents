@@ -16,6 +16,7 @@ generator_service = TestCaseGeneratorService()
 class GenerateRequest(BaseModel):
     requirements: str
     title: Optional[str] = None
+    mode: Optional[str] = "combined"
 
 
 class TestCaseResponseSchema(BaseModel):
@@ -75,6 +76,7 @@ async def generate_test_cases(
             provider=x_llm_provider,
             model=x_llm_model,
             api_key=x_llm_api_key,
+            mode=payload.mode,
             db=db
         )
         return result
@@ -143,3 +145,74 @@ async def delete_suite(suite_id: int, db: Session = Depends(get_db)):
     db.delete(suite)
     db.commit()
     return {"message": f"Successfully deleted Test Suite {suite_id}."}
+
+
+# =====================================================================
+# PROMPT ENGINE CONFIGURATION ENDPOINTS
+# =====================================================================
+
+class PromptsUpdateRequest(BaseModel):
+    content: str
+
+
+@router.get("/prompts/raw", response_model=dict)
+async def get_prompts_file(file: str = "CombinedPrompt.txt"):
+    """
+    Reads the raw prompt text configuration file from prompts/ folder on disk and returns it.
+    """
+    # Strict path-traversal safety check
+    if file not in ["UIPrompt.txt", "FunctionalPrompt.txt", "CombinedPrompt.txt", "BugReportPrompt.txt"]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid prompt file requested."
+        )
+        
+    import os
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    filepath = os.path.join(base_dir, "prompts", file)
+    
+    if not os.path.exists(filepath):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"{file} configuration file not found on disk."
+        )
+        
+    try:
+        with open(filepath, "r", encoding="utf-8") as f:
+            content = f.read()
+        return {"content": content}
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to read prompt file {file}: {str(e)}"
+        )
+
+
+@router.post("/prompts/raw", response_model=dict)
+async def save_prompts_file(payload: PromptsUpdateRequest, file: str = "CombinedPrompt.txt"):
+    """
+    Writes edited text configurations back to the corresponding prompt file on disk dynamically.
+    """
+    # Strict path-traversal safety check
+    if file not in ["UIPrompt.txt", "FunctionalPrompt.txt", "CombinedPrompt.txt", "BugReportPrompt.txt"]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid prompt file specified."
+        )
+        
+    import os
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    filepath = os.path.join(base_dir, "prompts", file)
+    
+    try:
+        with open(filepath, "w", encoding="utf-8") as f:
+            f.write(payload.content)
+        return {
+            "status": "success",
+            "message": f"{file} successfully updated dynamically!"
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to write prompt file {file}: {str(e)}"
+        )

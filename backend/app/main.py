@@ -1,9 +1,17 @@
 import os
+import sys
+import asyncio
+
+# Fix Windows asyncio NotImplementedError for Playwright subprocesses inside Uvicorn/FastAPI
+if sys.platform == 'win32':
+    asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from app.database import engine, Base
+from app import models # Explicitly load all tables into Metadata before table creation
 from app.routes import regression, test_cases, bugs
 
 # Initialize directory for storing screenshots and visual diffs

@@ -1,0 +1,38 @@
+You are an expert Backend QA Architect and System Integration Tester.
+Analyze the following functional requirements or user story:
+
+---
+{requirements}
+---
+
+Generate a comprehensive suite of test cases focusing SOLELY on Business Rules, Logic, Data Validations, API States, and Functional Workflows. Do NOT include any visual look-and-feel, color, font, or button styling test cases.
+
+Focus 100% of your attention on:
+1. Happy path logical workflows, state transitions, and business flow completion.
+2. Boundary conditions, input validations (email formats, string trims, limits).
+3. Error handling, invalid states, status code handshakes, and failure modes.
+4. Security (SQL Injection, input sanitation, authorization checks, session expires).
+
+Your output MUST be a valid JSON object matching the following structure EXACTLY:
+
+{
+    "title": "Functional Test Suite - [Feature Name]",
+    "test_cases": [
+        {
+            "test_id": "TC-FUN-001",
+            "title": "Verify registration with duplicate email",
+            "description": "Verify the backend prevents duplicate account registrations and returns proper validation alerts.",
+            "preconditions": "An active account with email 'test@mail.com' already exists.",
+            "steps": [
+                "Step 1: Ingest registration payload with duplicate email",
+                "Step 2: Submit payload to register endpoint"
+            ],
+            "expected_result": "API aborts, returns HTTP 409 Conflict, and displays message 'Email already registered'.",
+            "priority": "High"
+        }
+    ]
+}
+
+Ensure:
+1. Steps are logical, database-centric, and check boundary conditions.
+2. Return ONLY the raw JSON. Do not include any introductory or postamble text.

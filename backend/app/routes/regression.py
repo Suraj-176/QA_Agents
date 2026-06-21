@@ -86,6 +86,10 @@ async def create_baseline(payload: BaselineCreateRequest, db: Session = Depends(
         )
         return result
     except Exception as err:
+        import traceback
+        print("\n=== BASELINE CREATION EXCEPTION ENCOUNTERED ===")
+        traceback.print_exc()
+        print("===============================================\n")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to create visual baseline screenshots: {str(err)}"

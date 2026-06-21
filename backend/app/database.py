@@ -2,8 +2,12 @@ import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
 
-# Default to SQLite for frictionless zero-config setup, but support PostgreSQL if DATABASE_URL is supplied
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./qa_platform.db")
+# Get the absolute directory of the backend folder (C:\QAAgents\backend)
+backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+default_db_path = os.path.join(backend_dir, "qa_platform.db").replace("\\", "/")
+
+# Force absolute file path for SQLite to prevent working directory shifts!
+DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite:///{default_db_path}")
 
 # SQLite requires 'check_same_thread=False' for safe use in asynchronous context
 connect_args = {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
