@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import axios from 'axios'
-import { Eye, Play, Plus, RefreshCw, AlertTriangle, CheckCircle, Image as ImageIcon, Trash } from 'lucide-react'
+import { Eye, Play, Plus, RefreshCw, AlertTriangle, CheckCircle, Image as ImageIcon, Trash, ChevronRight } from 'lucide-react'
 
 const API_BASE_URL = 'http://127.0.0.1:5000/api'
 const STATIC_URL = 'http://127.0.0.1:5000/static'
@@ -47,16 +47,76 @@ function RegressionModule() {
     if (!newName || !newUrl) return
     setLoading(true)
 
+    // Read transient browser headers from localStorage
+    const browserHeaders = localStorage.getItem('browser_headers') || ""
+    
+    // Normalize Windows backslashes (\) to forward slashes (/) for HTTP header transmission safety!
+    const chromeProfile = (localStorage.getItem('chrome_profile') || "").replace(/\\/g, '/')
+
     try {
-      await axios.post(`${API_BASE_URL}/regression-testing/baselines`, {
-        name: newName,
-        url: newUrl
-      })
+      await axios.post(
+        `${API_BASE_URL}/regression-testing/baselines`, 
+        {
+          name: newName,
+          url: newUrl
+        },
+        {
+          headers: {
+            'X-Browser-Headers': browserHeaders,
+            'X-Chrome-Profile': chromeProfile
+          }
+        }
+      )
       setNewName('')
       setNewUrl('')
       await fetchBaselines()
     } catch (err) {
       alert(`Baseline generation failed: ${err.response?.data?.detail || err.message}`)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleDeleteBaseline = async () => {
+    if (!activeBaseline) return
+    if (!confirm(`Are you sure you want to permanently delete baseline "${activeBaseline.name}"? This will clear all associated historical test runs and delete all image files from your local disk!`)) return
+    
+    setLoading(true)
+    try {
+      await axios.delete(`${API_BASE_URL}/regression-testing/baselines/${activeBaseline.id}`)
+      setActiveBaseline(null)
+      setTestResult(null)
+      await fetchBaselines()
+    } catch (err) {
+      alert(`Delete failed: ${err.message}`)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleRecaptureBaseline = async () => {
+    if (!activeBaseline) return
+    if (!confirm(`Are you sure you want to re-capture and overwrite baseline visual benchmarks for "${activeBaseline.name}" at URL: ${activeBaseline.url}?`)) return
+    
+    setLoading(true)
+    const browserHeaders = localStorage.getItem('browser_headers') || ""
+    const chromeProfile = (localStorage.getItem('chrome_profile') || "").replace(/\\/g, '/')
+
+    try {
+      await axios.post(
+        `${API_BASE_URL}/regression-testing/baselines/${activeBaseline.id}/recapture`,
+        {},
+        {
+          headers: {
+            'X-Browser-Headers': browserHeaders,
+            'X-Chrome-Profile': chromeProfile
+          }
+        }
+      )
+      alert("Baseline visual benchmarks successfully re-captured and updated on disk!")
+      await fetchBaselines()
+    } catch (err) {
+      alert(`Recapture failed: ${err.response?.data?.detail || err.message}`)
     } finally {
       setLoading(false)
     }
@@ -68,11 +128,23 @@ function RegressionModule() {
     setTesting(true)
     setTestResult(null)
 
+    const browserHeaders = localStorage.getItem('browser_headers') || ""
+    const chromeProfile = (localStorage.getItem('chrome_profile') || "").replace(/\\/g, '/')
+
     try {
-      const response = await axios.post(`${API_BASE_URL}/regression-testing/test`, {
-        baseline_id: activeBaseline.id,
-        target_url: targetUrl
-      })
+      const response = await axios.post(
+        `${API_BASE_URL}/regression-testing/test`, 
+        {
+          baseline_id: activeBaseline.id,
+          target_url: targetUrl
+        },
+        {
+          headers: {
+            'X-Browser-Headers': browserHeaders,
+            'X-Chrome-Profile': chromeProfile
+          }
+        }
+      )
       
       const runId = response.data.run_id
       pollTestStatus(runId)
@@ -188,9 +260,32 @@ function RegressionModule() {
           <>
             {/* Run Visual Test form */}
             <div className="bg-gray-900 border border-gray-800 rounded-2xl p-8 space-y-5">
-              <h3 className="font-bold text-base text-white">🔍 Compare Base of "{activeBaseline.name}"</h3>
+              <div className="flex items-center justify-between border-b border-gray-800/60 pb-3 select-none">
+                <h3 className="font-bold text-base text-white">🔍 Compare Base of "{activeBaseline.name}"</h3>
+                <div className="flex items-center gap-3">
+                  {/* Re-capture Button */}
+                  <button
+                    onClick={handleRecaptureBaseline}
+                    disabled={loading || testing}
+                    className="bg-indigo-600/10 hover:bg-indigo-600/20 border border-indigo-500/20 text-indigo-400 px-3.5 py-1.5 rounded-lg font-bold text-xs flex items-center gap-1.5 transition-all active:scale-[0.96] disabled:opacity-50"
+                    title="Re-capture Baseline Benchmarks"
+                  >
+                    <RefreshCw size={12} className={loading ? 'animate-spin' : ''} />
+                    <span>Re-capture Base</span>
+                  </button>
+                  {/* Delete Button */}
+                  <button
+                    onClick={handleDeleteBaseline}
+                    disabled={loading || testing}
+                    className="bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 text-rose-400 p-2 rounded-lg transition-all active:scale-[0.96] disabled:opacity-50"
+                    title="Delete Baseline and Runs History"
+                  >
+                    <Trash size={14} />
+                  </button>
+                </div>
+              </div>
               
-              <form onSubmit={handleRunRegression} className="flex gap-4">
+              <form onSubmit={handleRunRegression} className="flex gap-4 pt-2">
                 <input
                   type="url"
                   value={targetUrl}
@@ -223,7 +318,7 @@ function RegressionModule() {
             {/* Test Results list */}
             {testResult && (
               <div className="bg-gray-900 border border-gray-800 rounded-2xl p-8 space-y-6 animate-fadeIn">
-                <div className="border-b border-gray-800 pb-4 flex items-center justify-between">
+                <div className="border-b border-gray-800 pb-4 flex items-center justify-between select-none">
                   <div>
                     <h3 className="font-bold text-lg text-white">Visual Comparison Report</h3>
                     <p className="text-xs text-gray-400 mt-1">Target URL: <span className="text-gray-300 font-semibold">{testResult.target_url}</span></p>
@@ -240,9 +335,9 @@ function RegressionModule() {
 
                 {/* Grid of Viewports */}
                 <div className="grid grid-cols-3 gap-6">
-                  {testResult.results.map((res) => (
+                  {testResult.results?.map((res) => (
                     <div key={res.id} className="bg-gray-950 border border-gray-800/80 p-5 rounded-xl space-y-4">
-                      <div className="flex items-center justify-between border-b border-gray-800 pb-3">
+                      <div className="flex items-center justify-between border-b border-gray-800 pb-3 select-none">
                         <span className="text-sm font-bold text-gray-200 capitalize">{res.viewport} Viewport</span>
                         <span className={`text-xs px-2.5 py-1 rounded-full font-semibold ${
                           res.is_mismatch

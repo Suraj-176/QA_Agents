@@ -10,6 +10,12 @@ function Settings() {
   const [apiKey, setApiKey] = useState('')
   const [showKey, setShowKey] = useState(false)
 
+  // Browser headers for authenticated page captures
+  const [browserHeaders, setBrowserHeaders] = useState('')
+
+  // Chrome Profile Path for Persistent session login bypasses
+  const [chromeProfile, setChromeProfile] = useState('')
+
   // Bug tracker selection
   const [bugExportTarget, setBugExportTarget] = useState('jira')
 
@@ -53,6 +59,8 @@ function Settings() {
     setProvider(localStorage.getItem('llm_provider') || 'gemini')
     setModel(localStorage.getItem('llm_model') || 'gemini-1.5-flash')
     setApiKey(localStorage.getItem('llm_api_key') || '')
+    setBrowserHeaders(localStorage.getItem('browser_headers') || '')
+    setChromeProfile(localStorage.getItem('chrome_profile') || '')
     
     setBugExportTarget(localStorage.getItem('bug_export_target') || 'jira')
 
@@ -100,9 +108,23 @@ function Settings() {
 
   const handleSave = (e) => {
     e.preventDefault()
+    
+    // Validate browser headers JSON format only if they explicitly wrote a JSON block (starts with '{')
+    const headersTrimmed = browserHeaders.trim()
+    if (headersTrimmed && headersTrimmed.startsWith('{')) {
+      try {
+        JSON.parse(headersTrimmed)
+      } catch (err) {
+        alert("Invalid JSON format for Browser Session Headers! Please check your syntax (ensure double quotes are used for keys and values).")
+        return
+      }
+    }
+
     localStorage.setItem('llm_provider', provider)
     localStorage.setItem('llm_model', model)
     localStorage.setItem('llm_api_key', apiKey)
+    localStorage.setItem('browser_headers', browserHeaders.trim())
+    localStorage.setItem('chrome_profile', chromeProfile.trim())
     
     localStorage.setItem('bug_export_target', bugExportTarget)
 
@@ -274,6 +296,36 @@ function Settings() {
                 {showKey ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
+          </div>
+
+          {/* Browser Headers Configuration for Login Support */}
+          <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-gray-850">
+            <label className="text-sm font-semibold text-slate-700 dark:text-gray-300">Custom Browser Session Headers (JSON Optional)</label>
+            <input
+              type="text"
+              value={browserHeaders}
+              onChange={(e) => setBrowserHeaders(e.target.value)}
+              placeholder='e.g. {"Authorization": "Bearer token123", "Cookie": "session=abc"}'
+              className="w-full bg-slate-50 dark:bg-gray-950 border border-slate-200 dark:border-gray-800 rounded-xl px-4 py-3.5 text-sm text-slate-800 dark:text-gray-200 focus:outline-none focus:border-indigo-500 transition-colors font-mono text-xs placeholder:text-gray-400 dark:placeholder:text-gray-600"
+            />
+            <p className="text-[10px] text-slate-400 dark:text-gray-500 leading-normal">
+              * Inject raw session authorization headers or cookies to automatically bypass login screens and capture password-protected user dashboards.
+            </p>
+          </div>
+
+          {/* Chrome Profile Path Configuration for Persistent session login bypasses */}
+          <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-gray-850">
+            <label className="text-sm font-semibold text-slate-700 dark:text-gray-300">Persistent Browser Profile Path (Edge / Chrome Optional)</label>
+            <input
+              type="text"
+              value={chromeProfile}
+              onChange={(e) => setChromeProfile(e.target.value)}
+              placeholder="e.g. C:\Users\suraj.yadav\AppData\Local\Microsoft\Edge\User Data"
+              className="w-full bg-slate-50 dark:bg-gray-950 border border-slate-200 dark:border-gray-800 rounded-xl px-4 py-3.5 text-sm text-slate-800 dark:text-gray-200 focus:outline-none focus:border-indigo-500 transition-colors font-mono text-xs placeholder:text-gray-400 dark:placeholder:text-gray-600"
+            />
+            <p className="text-[10px] text-slate-400 dark:text-gray-500 leading-normal">
+              * Bypasses strict Microsoft/Okta SSO login walls entirely by launching Playwright using your active, authenticated manual Microsoft Edge or Google Chrome session profile directory.
+            </p>
           </div>
         </div>
 

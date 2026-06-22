@@ -125,6 +125,13 @@ class BugReporterService:
         db.add(bug_report)
         db.commit()
 
+        # Write to audit logs
+        try:
+            from app.routes.audit_logs import log_audit
+            log_audit(db, "bug_reporter", f"Drafted visual bug report '{bug_report.title}' with severity: {bug_report.severity}")
+        except Exception:
+            pass
+
         return {
             "bug_id": bug_report.id,
             "title": bug_report.title,

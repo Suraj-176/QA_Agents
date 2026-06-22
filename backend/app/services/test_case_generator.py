@@ -125,6 +125,13 @@ class TestCaseGeneratorService:
         
         db.commit()
 
+        # Write to audit logs
+        try:
+            from app.routes.audit_logs import log_audit
+            log_audit(db, "testcase_generator", f"Generated test case suite '{suite.title}' containing {len(saved_test_cases)} test cases.")
+        except Exception:
+            pass
+
         # Serialize result for response
         return {
             "suite_id": suite.id,

@@ -1,26 +1,54 @@
-from fastapi import APIRouter, Depends, BackgroundTasks, HTTPException, status
-from pydantic import BaseModel
+import json
+import logging
+from typing import List, Optional, Dict, Any
+from datetime import datetime
+
+from fastapi import APIRouter, Depends, BackgroundTasks, HTTPException, status, Header
+from pydantic import BaseModel, validator, HttpUrl
 from sqlalchemy.orm import Session
-from typing import List, Optional
+
 from app.database import get_db
 from app.models import Baseline, RegressionTestRun, RegressionTestResult
 from app.services.regression_testing import RegressionTestingService
 
-router = APIRouter(prefix="/api/regression-testing", tags=["Regression Testing"])
+# Configure logging
+logger = logging.getLogger(__name__)
+
+router = APIRouter(
+    prefix="/api/regression-testing",
+    tags=["Regression Testing"],
+    responses={500: {"description": "Internal server error"}}
+)
+
 regression_service = RegressionTestingService()
 
+
 # =====================================================================
-# PYDANTIC SCHEMAS
+# PYDANTIC SCHEMAS (Validated API Boundary Models)
 # =====================================================================
 
 class BaselineCreateRequest(BaseModel):
     name: str
-    url: str
+    url: HttpUrl
+    
+    @validator('name')
+    def name_not_empty(cls, v):
+        """Validate baseline name is not empty or whitespace only"""
+        if not v or not v.strip():
+            raise ValueError('name cannot be empty')
+        return v.strip()
 
 
 class TestRunRequest(BaseModel):
     baseline_id: int
-    target_url: str
+    target_url: HttpUrl
+    
+    @validator('baseline_id')
+    def baseline_id_positive(cls, v):
+        """Validate baseline_id is positive"""
+        if v <= 0:
+            raise ValueError('baseline_id must be a positive integer')
+        return v
 
 
 class ScreenshotSchema(BaseModel):
@@ -35,7 +63,7 @@ class BaselineResponseSchema(BaseModel):
     id: int
     name: str
     url: str
-    created_at: str
+    created_at: datetime
     screenshots: List[ScreenshotSchema]
 
     class Config:
@@ -62,7 +90,7 @@ class RunDetailResponseSchema(BaseModel):
     target_url: str
     status: str
     summary: Optional[str]
-    created_at: str
+    created_at: datetime
     results: List[ResultResponseSchema]
 
     class Config:
@@ -70,37 +98,118 @@ class RunDetailResponseSchema(BaseModel):
 
 
 # =====================================================================
-# API ENDPOINTS
+# DEPENDENCY RESOLVER & TOKEN NORMALIZER
 # =====================================================================
 
-@router.post("/baselines", response_model=dict, status_code=status.HTTP_201_CREATED)
-async def create_baseline(payload: BaselineCreateRequest, db: Session = Depends(get_db)):
+def extract_universal_access_token(
+    x_access_token: Optional[str] = Header(None, alias="X-Access-Token"),
+    x_browser_headers: Optional[str] = Header(None, alias="X-Browser-Headers")
+) -> Optional[str]:
+    """
+    Universally extracts the active authentication token from incoming requests.
+    Supports:
+    1. X-Access-Token header directly (Curl Curls)
+    2. X-Browser-Headers JSON/string configuration (React Settings UI Panel)
+    """
+    # 1. Prefer direct X-Access-Token
+    if x_access_token and x_access_token.strip():
+        return x_access_token.strip()
+        
+    # 2. Fallback and parse from X-Browser-Headers JSON / raw JWT string
+    if x_browser_headers and x_browser_headers.strip():
+        val = x_browser_headers.strip()
+        
+        # Parse JSON
+        if val.startswith("{"):
+            try:
+                parsed = json.loads(val)
+                # Look for standard token key names inside user JSON
+                for key in ["Authorization", "authorization", "access_token", "accessToken", "token", "jwt"]:
+                    if key in parsed:
+                        return str(parsed[key]).strip()
+            except Exception:
+                pass
+        
+        # Return raw flat token string directly
+        return val
+        
+    return None
+
+
+# =====================================================================
+# BACKGROUND TASK ERROR HANDLERS (With Transactional Safety)
+# =====================================================================
+
+async def run_regression_test_with_error_handling(
+    run_id: int,
+    db: Session,
+    access_token: Optional[str] = None
+):
+    """Executes comparison screenshots with complete error boundary isolation"""
+    try:
+        logger.info(f"Running comparison checks for run {run_id} ...")
+        await regression_service.run_regression_test(
+            run_id=run_id,
+            db=db,
+            access_token=access_token
+        )
+    except Exception as e:
+        logger.error(f"Failed to execute background comparison run {run_id}: {str(e)}", exc_info=True)
+        # Force fail state on db record to prevent hanging pending visual tests
+        try:
+            run = db.query(RegressionTestRun).filter(RegressionTestRun.id == run_id).first()
+            if run:
+                run.status = "failed"
+                run.summary = f"Audit failed: {str(e)}"
+                db.commit()
+        except Exception as db_err:
+            logger.error(f"Failed to record db failure for run {run_id}: {str(db_err)}")
+
+
+# =====================================================================
+# API ENDPOINTS (Token-Only General-Purpose Router)
+# =====================================================================
+
+@router.post(
+    "/baselines",
+    response_model=Dict[str, Any],
+    status_code=status.HTTP_201_CREATED,
+    summary="Create baseline visual screenshots"
+)
+async def create_baseline(
+    payload: BaselineCreateRequest,
+    access_token: Optional[str] = Depends(extract_universal_access_token),
+    db: Session = Depends(get_db)
+):
     """
     Establish a visual baseline by launching Playwright and capturing desktop, tablet, and mobile views.
+    Works universally with ANY application using standard access token headers/cookies.
     """
     try:
+        logger.info(f"Creating visual baseline benchmarks for '{payload.name}' at {payload.url} ...")
         result = await regression_service.setup_baseline(
             name=payload.name,
-            url=payload.url,
-            db=db
+            url=str(payload.url),
+            db=db,
+            access_token=access_token
         )
+        logger.info(f"✓ Baseline created successfully: ID {result.get('baseline_id')}")
         return result
     except Exception as err:
-        import traceback
-        print("\n=== BASELINE CREATION EXCEPTION ENCOUNTERED ===")
-        traceback.print_exc()
-        print("===============================================\n")
+        logger.error(f"✗ Baseline creation failed: {str(err)}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to create visual baseline screenshots: {str(err)}"
         )
 
 
-@router.get("/baselines", response_model=List[BaselineResponseSchema])
+@router.get(
+    "/baselines",
+    response_model=List[BaselineResponseSchema],
+    summary="List all visual baselines"
+)
 async def list_baselines(db: Session = Depends(get_db)):
-    """
-    Retrieve all established visual baselines.
-    """
+    """Retrieve all established visual baselines."""
     baselines = db.query(Baseline).all()
     results = []
     for b in baselines:
@@ -108,21 +217,25 @@ async def list_baselines(db: Session = Depends(get_db)):
             "id": b.id,
             "name": b.name,
             "url": b.url,
-            "created_at": b.created_at.isoformat(),
+            "created_at": b.created_at,
             "screenshots": b.screenshots
         })
     return results
 
 
-@router.post("/test", response_model=dict, status_code=status.HTTP_202_ACCEPTED)
+@router.post(
+    "/test",
+    response_model=Dict[str, Any],
+    status_code=status.HTTP_202_ACCEPTED,
+    summary="Trigger a visual regression test"
+)
 async def run_regression_test(
-    payload: TestRunRequest, 
-    background_tasks: BackgroundTasks, 
+    payload: TestRunRequest,
+    background_tasks: BackgroundTasks,
+    access_token: Optional[str] = Depends(extract_universal_access_token),
     db: Session = Depends(get_db)
 ):
-    """
-    Trigger a visual regression test against an established baseline. Runs as a non-blocking background task.
-    """
+    """Trigger a visual regression test. Runs as a non-blocking background task."""
     # Verify baseline exists
     baseline = db.query(Baseline).filter(Baseline.id == payload.baseline_id).first()
     if not baseline:
@@ -134,19 +247,21 @@ async def run_regression_test(
     # Create a pending test run entry
     run = RegressionTestRun(
         baseline_id=payload.baseline_id,
-        target_url=payload.target_url,
+        target_url=str(payload.target_url),
         status="pending"
     )
     db.add(run)
     db.commit()
 
-    # Enqueue comparison routine on FastAPI's native asyncio BackgroundTasks worker queue
+    # Enqueue comparison routine on FastAPI's background task queue
     background_tasks.add_task(
-        regression_service.run_regression_test,
+        run_regression_test_with_error_handling,
         run_id=run.id,
-        db=db
+        db=db,
+        access_token=access_token
     )
 
+    logger.info(f"Scheduled visual regression comparison run {run.id}")
     return {
         "run_id": run.id,
         "status": "pending",
@@ -154,11 +269,13 @@ async def run_regression_test(
     }
 
 
-@router.get("/runs/{run_id}", response_model=RunDetailResponseSchema)
+@router.get(
+    "/runs/{run_id}",
+    response_model=RunDetailResponseSchema,
+    summary="Get visual regression test run details"
+)
 async def get_run_details(run_id: int, db: Session = Depends(get_db)):
-    """
-    Retrieve execution state, text summaries, and viewport diff results for a visual comparison run.
-    """
+    """Retrieve execution state and viewport diff results for a visual comparison run."""
     run = db.query(RegressionTestRun).filter(RegressionTestRun.id == run_id).first()
     if not run:
         raise HTTPException(
@@ -172,6 +289,49 @@ async def get_run_details(run_id: int, db: Session = Depends(get_db)):
         "target_url": run.target_url,
         "status": run.status,
         "summary": run.summary,
-        "created_at": run.created_at.isoformat(),
+        "created_at": run.created_at,
         "results": run.results
     }
+
+
+@router.delete(
+    "/baselines/{baseline_id}",
+    summary="Delete a baseline"
+)
+async def delete_baseline(baseline_id: int, db: Session = Depends(get_db)):
+    """Delete a baseline and safely clean up all baseline and runs screenshot subfolders from disk."""
+    try:
+        await regression_service.delete_baseline(baseline_id=baseline_id, db=db)
+        return {"message": f"Successfully deleted Baseline {baseline_id} and cleared related screenshot folders."}
+    except ValueError as val_err:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(val_err))
+    except Exception as err:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(err))
+
+
+@router.post(
+    "/baselines/{baseline_id}/recapture",
+    response_model=Dict[str, Any],
+    summary="Recapture baseline screenshots"
+)
+async def recapture_baseline(
+    baseline_id: int,
+    access_token: Optional[str] = Depends(extract_universal_access_token),
+    db: Session = Depends(get_db)
+):
+    """Re-capture and overwrite the visual viewport benchmarks for an established baseline URL."""
+    try:
+        result = await regression_service.recapture_baseline(
+            baseline_id=baseline_id,
+            db=db,
+            access_token=access_token
+        )
+        logger.info(f"Successfully recaptured baseline {baseline_id}")
+        return result
+    except ValueError as val_err:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(val_err))
+    except Exception as err:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Recapture failed: {str(err)}"
+        )

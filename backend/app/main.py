@@ -12,7 +12,7 @@ from fastapi.staticfiles import StaticFiles
 
 from app.database import engine, Base
 from app import models # Explicitly load all tables into Metadata before table creation
-from app.routes import regression, test_cases, bugs
+from app.routes import regression, test_cases, bugs, audit_logs
 
 # Initialize directory for storing screenshots and visual diffs
 UPLOAD_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "static")
@@ -43,6 +43,7 @@ app.mount("/static", StaticFiles(directory=UPLOAD_DIR), name="static")
 app.include_router(regression.router)
 app.include_router(test_cases.router)
 app.include_router(bugs.router)
+app.include_router(audit_logs.router)
 
 @app.get("/")
 async def root():

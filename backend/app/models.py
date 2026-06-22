@@ -131,3 +131,16 @@ class BugReport(Base):
     status = Column(String, default="draft") # 'draft', 'submitted_to_jira'
     ai_analysis = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+
+# =====================================================================
+# SYSTEM AUDIT LOG MODEL
+# =====================================================================
+
+class AuditLog(Base):
+    __tablename__ = "audit_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    action = Column(String, nullable=False)  # e.g., 'visual_testing', 'testcase_generator', 'bug_reporter', 'config'
+    details = Column(Text, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)

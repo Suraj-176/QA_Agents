@@ -189,7 +189,11 @@ async def get_prompts_file(file: str = "CombinedPrompt.txt"):
 
 
 @router.post("/prompts/raw", response_model=dict)
-async def save_prompts_file(payload: PromptsUpdateRequest, file: str = "CombinedPrompt.txt"):
+async def save_prompts_file(
+    payload: PromptsUpdateRequest, 
+    file: str = "CombinedPrompt.txt",
+    db: Session = Depends(get_db)
+):
     """
     Writes edited text configurations back to the corresponding prompt file on disk dynamically.
     """
@@ -207,6 +211,14 @@ async def save_prompts_file(payload: PromptsUpdateRequest, file: str = "Combined
     try:
         with open(filepath, "w", encoding="utf-8") as f:
             f.write(payload.content)
+            
+        # Write to audit logs
+        try:
+            from app.routes.audit_logs import log_audit
+            log_audit(db, "config", f"Updated and published prompt template file on disk: '{file}'")
+        except Exception:
+            pass
+
         return {
             "status": "success",
             "message": f"{file} successfully updated dynamically!"
