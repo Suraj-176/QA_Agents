@@ -152,7 +152,7 @@ function Dashboard({ setActiveTab }) {
                   <span>SDET Scaffolder</span>
                   <ChevronRight size={14} className="opacity-0 group-hover:opacity-100 transition-all" />
                 </h4>
-                <p className="text-xs text-slate-500 dark:text-gray-400 mt-1 leading-relaxed">Scaffold BDD/Hybrid/Keyword-driven repositories or extend page objects.</p>
+                <p className="text-xs text-slate-500 dark:text-gray-400 mt-1 leading-relaxed">Scaffold BDD/POM repositories for Playwright, Selenium & Cypress, or surgically extend page objects.</p>
               </div>
             </button>
           </div>

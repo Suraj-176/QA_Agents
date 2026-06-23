@@ -172,9 +172,9 @@ function AutomationModule() {
   }
 
   return (
-    <div className="space-y-8 animate-fadeIn select-none">
+    <div className="space-y-8 animate-fadeIn select-none text-slate-800 dark:text-white">
       {/* Sub-Tab Selector Header */}
-      <div className="bg-gray-900 border border-gray-800 rounded-2xl p-2 flex gap-2 w-fit">
+      <div className="bg-white dark:bg-gray-900 border border-slate-200 dark:border-slate-200 dark:border-gray-800 rounded-2xl p-2 flex gap-2 w-fit shadow-sm transition-all">
         <button
           onClick={() => {
             setActiveSubTab('bootstrap')
@@ -183,7 +183,7 @@ function AutomationModule() {
           className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all ${
             activeSubTab === 'bootstrap'
               ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/10'
-              : 'text-gray-400 hover:text-gray-200'
+              : 'text-slate-500 hover:text-slate-700 dark:text-slate-500 dark:text-gray-400 dark:hover:text-slate-700 dark:text-gray-200'
           }`}
         >
           🚀 Bootstrap New Framework
@@ -196,7 +196,7 @@ function AutomationModule() {
           className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all ${
             activeSubTab === 'extend'
               ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/10'
-              : 'text-gray-400 hover:text-gray-200'
+              : 'text-slate-500 hover:text-slate-700 dark:text-slate-500 dark:text-gray-400 dark:hover:text-slate-700 dark:text-gray-200'
           }`}
         >
           🔧 Extend Existing Framework
@@ -207,78 +207,78 @@ function AutomationModule() {
       {activeSubTab === 'bootstrap' && (
         <div className="grid grid-cols-12 gap-8">
           {/* Form left */}
-          <div className="col-span-5 bg-gray-900 border border-gray-800 rounded-2xl p-6 h-fit space-y-6">
-            <div className="border-b border-gray-800 pb-3">
-              <h3 className="font-bold text-white text-base">🏗️ Configure Scaffolder</h3>
-              <p className="text-[10px] text-gray-500 mt-1 leading-normal">
+          <div className="col-span-5 bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-800 rounded-2xl p-6 h-fit space-y-6 shadow-sm transition-all">
+            <div className="border-b border-slate-200 dark:border-gray-800 pb-3">
+              <h3 className="font-bold text-slate-800 dark:text-white text-base">🏗️ Configure Scaffolder</h3>
+              <p className="text-[10px] text-slate-500 dark:text-gray-450 mt-1 leading-normal">
                 Choose your environment. Provide a local directory path to scaffold on disk, or leave it blank to download as a structured ZIP!
               </p>
             </div>
-            
+
             <form onSubmit={handleBootstrap} className="space-y-5">
               {/* Tool selector */}
               <div className="space-y-2">
-                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Automation Tool</label>
+                <label className="text-xs font-bold text-slate-500 dark:text-gray-400 uppercase tracking-wider">Automation Tool</label>
                 <select
                   value={bootTool}
                   onChange={(e) => setBootTool(e.target.value)}
-                  className="w-full bg-gray-950 border border-gray-800 rounded-xl px-4 py-3 text-xs text-gray-200 focus:outline-none focus:border-indigo-500 cursor-pointer"
+                  className="w-full bg-slate-50 dark:bg-gray-950 border border-slate-200 dark:border-gray-800 rounded-xl px-4 py-3 text-xs text-slate-850 dark:text-gray-200 focus:outline-none focus:border-indigo-500 cursor-pointer"
                   disabled={loading}
                 >
-                  <option value="Playwright">Playwright (Modern, Fast)</option>
-                  <option value="Selenium">Selenium WebDriver (Classic, Enterprise)</option>
-                  <option value="Cypress">Cypress (Modern, Frontend)</option>
+                  <option value="Playwright" className="bg-white dark:bg-slate-50 dark:bg-gray-950">Playwright (Modern, Fast)</option>
+                  <option value="Selenium" className="bg-white dark:bg-slate-50 dark:bg-gray-950">Selenium WebDriver (Classic, Enterprise)</option>
+                  <option value="Cypress" className="bg-white dark:bg-slate-50 dark:bg-gray-950">Cypress (Modern, Frontend)</option>
                 </select>
               </div>
 
               {/* Language selector */}
               <div className="space-y-2">
-                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Target Language</label>
+                <label className="text-xs font-bold text-slate-500 dark:text-gray-400 uppercase tracking-wider">Target Language</label>
                 <select
                   value={bootLang}
                   onChange={(e) => setBootLang(e.target.value)}
-                  className="w-full bg-gray-950 border border-gray-800 rounded-xl px-4 py-3 text-xs text-gray-200 focus:outline-none focus:border-indigo-500 cursor-pointer"
+                  className="w-full bg-slate-50 dark:bg-gray-950 border border-slate-200 dark:border-gray-800 rounded-xl px-4 py-3 text-xs text-slate-850 dark:text-gray-200 focus:outline-none focus:border-indigo-500 cursor-pointer"
                   disabled={loading}
                 >
-                  <option value="TypeScript">TypeScript (Recommended)</option>
-                  <option value="JavaScript">JavaScript</option>
-                  <option value="Python">Python</option>
-                  <option value="Java">Java</option>
+                  <option value="TypeScript" className="bg-white dark:bg-gray-950">TypeScript (Recommended)</option>
+                  <option value="JavaScript" className="bg-white dark:bg-gray-950">JavaScript</option>
+                  <option value="Python" className="bg-white dark:bg-gray-950">Python</option>
+                  <option value="Java" className="bg-white dark:bg-gray-950">Java</option>
                 </select>
               </div>
 
               {/* Pattern selector */}
               <div className="space-y-2">
-                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Architecture Pattern</label>
+                <label className="text-xs font-bold text-slate-500 dark:text-gray-400 uppercase tracking-wider">Architecture Pattern</label>
                 <select
                   value={bootPattern}
                   onChange={(e) => setBootPattern(e.target.value)}
-                  className="w-full bg-gray-950 border border-gray-800 rounded-xl px-4 py-3 text-xs text-gray-200 focus:outline-none focus:border-indigo-500 cursor-pointer"
+                  className="w-full bg-slate-50 dark:bg-gray-950 border border-slate-200 dark:border-gray-800 rounded-xl px-4 py-3 text-xs text-slate-850 dark:text-gray-200 focus:outline-none focus:border-indigo-500 cursor-pointer"
                   disabled={loading}
                 >
-                  <option value="BDD (Cucumber / Gherkin)">BDD (Cucumber / Gherkin Syntax)</option>
-                  <option value="Data-Driven (CSV/JSON Inputs)">Data-Driven (Dynamic CSV/JSON Data Loops)</option>
-                  <option value="API-First Hybrid Testing">API-First Hybrid Testing (Bypasses UI via API Seeding)</option>
-                  <option value="Keyword-Driven Testing">Keyword-Driven Testing (Semantic Action Keywords)</option>
+                  <option value="BDD (Cucumber / Gherkin)" className="bg-white dark:bg-gray-950">BDD (Cucumber / Gherkin Syntax)</option>
+                  <option value="Data-Driven (CSV/JSON Inputs)" className="bg-white dark:bg-gray-950">Data-Driven (Dynamic CSV/JSON Data Loops)</option>
+                  <option value="API-First Hybrid Testing" className="bg-white dark:bg-gray-950">API-First Hybrid Testing (Bypasses UI via API Seeding)</option>
+                  <option value="Keyword-Driven Testing" className="bg-white dark:bg-gray-950">Keyword-Driven Testing (Semantic Action Keywords)</option>
                 </select>
               </div>
 
               {/* DUAL-MODE Optional Folder path input with Graphical Browse Folder Button */}
               <div className="space-y-2">
-                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Local Scaffold Directory (Optional)</label>
+                <label className="text-xs font-bold text-slate-500 dark:text-gray-400 uppercase tracking-wider">Local Scaffold Directory (Optional)</label>
                 <div className="flex gap-2">
                   <input
                     type="text"
                     value={bootFolder}
                     onChange={(e) => setBootFolder(e.target.value)}
                     placeholder="Optional. Leave blank for pure ZIP downloads!"
-                    className="flex-1 bg-gray-950 border border-gray-800 rounded-xl px-4 py-3 text-xs text-gray-200 font-mono focus:outline-none focus:border-indigo-500"
+                    className="flex-1 bg-slate-50 dark:bg-gray-950 border border-slate-200 dark:border-gray-800 rounded-xl px-4 py-3 text-xs text-slate-850 dark:text-gray-200 placeholder-slate-400 dark:placeholder-gray-500 font-mono focus:outline-none focus:border-indigo-500"
                     disabled={loading}
                   />
                   <button
                     type="button"
                     onClick={() => handleBrowseFolder(setBootFolder)}
-                    className="bg-gray-950 border border-gray-800 hover:border-gray-700 text-gray-400 hover:text-gray-200 px-3.5 rounded-xl transition-all active:scale-[0.95]"
+                    className="bg-slate-50 dark:bg-gray-950 border border-slate-200 dark:border-gray-800 hover:border-slate-300 dark:hover:border-gray-700 text-slate-500 dark:text-gray-400 hover:text-slate-700 dark:hover:text-gray-200 px-3.5 rounded-xl transition-all active:scale-[0.95]"
                     disabled={loading}
                     title="Select a directory graphically using Windows Folder Explorer Dialog"
                   >
@@ -302,20 +302,20 @@ function AutomationModule() {
           <div className="col-span-7 space-y-6">
             {loading ? (
               /* Gorgeous step-by-step loading meter card */
-              <div className="bg-gray-900 border border-gray-800 rounded-2xl p-10 flex flex-col justify-center items-center h-full min-h-[400px] animate-fadeIn space-y-6">
+              <div className="bg-white dark:bg-gray-900 border border-slate-200 dark:border-slate-200 dark:border-gray-800 rounded-2xl p-10 flex flex-col justify-center items-center h-full min-h-[400px] animate-fadeIn space-y-6 shadow-sm transition-all">
                 <div className="relative w-24 h-24 flex items-center justify-center">
                   <div className="absolute inset-0 border-4 border-indigo-500/10 rounded-full"></div>
                   <div className="absolute inset-0 border-4 border-t-indigo-500 rounded-full animate-spin"></div>
-                  <span className="font-extrabold text-white text-lg font-mono">{progress}%</span>
+                  <span className="font-extrabold text-slate-850 dark:text-slate-800 dark:text-white text-lg font-mono">{progress}%</span>
                 </div>
                 
                 <div className="text-center space-y-2 max-w-sm">
-                  <h4 className="font-bold text-white text-sm uppercase tracking-wider animate-pulse text-indigo-400">Executing SDET Agent</h4>
-                  <p className="text-xs text-gray-300 font-medium leading-relaxed font-mono h-12 flex items-center justify-center">{progressMsg}</p>
+                  <h4 className="font-bold text-indigo-600 dark:text-indigo-400 text-sm uppercase tracking-wider animate-pulse">Executing SDET Agent</h4>
+                  <p className="text-xs text-slate-600 dark:text-slate-600 dark:text-gray-300 font-medium leading-relaxed font-mono h-12 flex items-center justify-center">{progressMsg}</p>
                 </div>
 
                 {/* Simulated visual progress bar */}
-                <div className="w-full bg-gray-950 h-2.5 rounded-full overflow-hidden border border-gray-850 max-w-md">
+                <div className="w-full bg-slate-100 dark:bg-slate-50 dark:bg-gray-950 h-2.5 rounded-full overflow-hidden border border-slate-200 dark:border-slate-200 dark:border-gray-850 max-w-md">
                   <div 
                     className="bg-indigo-500 h-full rounded-full transition-all duration-300 shadow-lg shadow-indigo-500/50"
                     style={{ width: `${progress}%` }}
@@ -323,17 +323,17 @@ function AutomationModule() {
                 </div>
               </div>
             ) : bootResult ? (
-              <div className="bg-gray-900 border border-gray-800 rounded-2xl p-8 space-y-6 animate-fadeIn">
-                <div className="border-b border-gray-800 pb-4 flex items-center justify-between">
+              <div className="bg-white dark:bg-gray-900 border border-slate-200 dark:border-slate-200 dark:border-gray-800 rounded-2xl p-8 space-y-6 animate-fadeIn shadow-sm transition-all">
+                <div className="border-b border-slate-200 dark:border-slate-200 dark:border-gray-800 pb-4 flex items-center justify-between">
                   <div>
-                    <h3 className="font-bold text-white text-lg flex items-center gap-2">
+                    <h3 className="font-bold text-slate-800 dark:text-slate-800 dark:text-white text-lg flex items-center gap-2">
                       <CheckCircle className="text-emerald-500" size={20} />
                       <span>Framework Scaffolded Successfully!</span>
                     </h3>
-                    <p className="text-xs text-gray-400 mt-1 font-semibold">
-                      Pattern Selected: <span className="text-indigo-400 font-bold font-mono">{bootPattern}</span>
+                    <p className="text-xs text-slate-500 dark:text-gray-450 mt-1 font-semibold">
+                      Pattern Selected: <span className="text-indigo-600 dark:text-indigo-400 font-bold font-mono">{bootPattern}</span>
                     </p>
-                    <p className="text-[11px] text-gray-400 mt-1">Directory: <code className="bg-gray-950 px-1.5 py-0.5 rounded font-bold text-indigo-400 font-mono text-[10px]">{bootResult.output_folder}</code></p>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-500 dark:text-gray-400 mt-1">Directory: <code className="bg-slate-50 dark:bg-slate-50 dark:bg-gray-950 border border-slate-200 dark:border-slate-200 dark:border-gray-850 px-1.5 py-0.5 rounded font-bold text-indigo-600 dark:text-indigo-400 font-mono text-[10px]">{bootResult.output_folder}</code></p>
                   </div>
                   
                   {/* Download ZIP link */}
@@ -348,22 +348,22 @@ function AutomationModule() {
                 </div>
 
                 {/* Scaffolder Info banner */}
-                <div className="p-4 bg-indigo-500/5 border border-indigo-500/10 text-indigo-300 rounded-xl flex items-start gap-3">
-                  <CheckCircle className="text-indigo-400 mt-0.5 shrink-0" size={16} />
+                <div className="p-4 bg-indigo-500/5 border border-indigo-500/10 text-indigo-600 dark:text-indigo-300 rounded-xl flex items-start gap-3">
+                  <CheckCircle className="text-indigo-500 dark:text-indigo-400 mt-0.5 shrink-0" size={16} />
                   <div>
                     <h4 className="font-bold text-xs leading-none">Scaffolding Completed Successfully! ✅</h4>
-                    <p className="text-[11px] mt-1.5 text-gray-400 leading-relaxed">
-                      All files for <span className="text-white font-bold">{bootTool} + {bootLang} ({bootPattern})</span> have been compiled in memory. Click the **Download Framework ZIP** button above to save and explore your complete corporate testing repository!
+                    <p className="text-[11px] mt-1.5 text-slate-500 dark:text-slate-500 dark:text-gray-400 leading-relaxed">
+                      All files for <span className="text-slate-800 dark:text-white font-bold">{bootTool} + {bootLang} ({bootPattern})</span> have been compiled in memory. Click the **Download Framework ZIP** button above to save and explore your complete corporate testing repository!
                     </p>
                   </div>
                 </div>
 
                 <div className="space-y-3">
-                  <p className="text-xs font-bold uppercase tracking-wider text-gray-400">Scaffolded Files ({bootResult.files_count})</p>
-                  <div className="bg-gray-950 border border-gray-850 p-4 rounded-xl max-h-[220px] overflow-y-auto space-y-2 font-mono text-[11px] text-gray-400 shadow-inner">
+                  <p className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-500 dark:text-gray-400">Scaffolded Files ({bootResult.files_count})</p>
+                  <div className="bg-slate-50 dark:bg-slate-50 dark:bg-gray-950 border border-slate-200 dark:border-slate-200 dark:border-gray-850 p-4 rounded-xl max-h-[220px] overflow-y-auto space-y-2 font-mono text-[11px] text-slate-600 dark:text-slate-500 dark:text-gray-400 shadow-inner">
                     {bootResult.files.map((file, idx) => (
-                      <div key={idx} className="flex items-center gap-2 hover:text-white transition-colors">
-                        <FileCode size={12} className="text-indigo-400 shrink-0" />
+                      <div key={idx} className="flex items-center gap-2 hover:text-slate-800 dark:hover:text-white transition-colors">
+                        <FileCode size={12} className="text-indigo-500 dark:text-indigo-400 shrink-0" />
                         <span>{file}</span>
                       </div>
                     ))}
@@ -371,10 +371,10 @@ function AutomationModule() {
                 </div>
               </div>
             ) : (
-              <div className="bg-gray-900 border border-gray-800 rounded-2xl p-12 text-center text-gray-500 h-full flex flex-col justify-center items-center min-h-[400px]">
-                <Code2 size={48} className="text-gray-800 mb-4" />
-                <h4 className="font-bold text-gray-300 text-base">No Bootstrapped Framework Yet</h4>
-                <p className="text-xs text-gray-500 max-w-sm mx-auto mt-1 leading-relaxed">Configure your target tool, language, and directory path on the left form panel, then click generate to bootstrap a production-ready repository.</p>
+              <div className="bg-white dark:bg-gray-900 border border-slate-200 dark:border-slate-200 dark:border-gray-800 rounded-2xl p-12 text-center text-slate-400 dark:text-slate-400 dark:text-gray-500 h-full flex flex-col justify-center items-center min-h-[400px] shadow-sm transition-all">
+                <Code2 size={48} className="text-slate-300 dark:text-gray-800 mb-4" />
+                <h4 className="font-bold text-slate-700 dark:text-slate-600 dark:text-gray-300 text-base">No Bootstrapped Framework Yet</h4>
+                <p className="text-xs text-slate-500 dark:text-slate-400 dark:text-gray-500 max-w-sm mx-auto mt-1 leading-relaxed">Configure your target tool, language, and directory path on the left form panel, then click generate to bootstrap a production-ready repository.</p>
               </div>
             )}
           </div>
@@ -385,27 +385,27 @@ function AutomationModule() {
       {activeSubTab === 'extend' && (
         <div className="grid grid-cols-12 gap-8">
           {/* Instructions left */}
-          <div className="col-span-5 bg-gray-900 border border-gray-800 rounded-2xl p-6 h-fit space-y-6">
-            <h3 className="font-bold text-white text-base border-b border-gray-800 pb-3">🔧 Extend Local Repo</h3>
+          <div className="col-span-5 bg-white dark:bg-gray-900 border border-slate-200 dark:border-slate-200 dark:border-gray-800 shadow-sm transition-all rounded-2xl p-6 h-fit space-y-6">
+            <h3 className="font-bold text-slate-800 dark:text-white text-base border-b border-slate-200 dark:border-gray-800 pb-3">🔧 Extend Local Repo</h3>
             
             <form onSubmit={handleGenerateFile} className="space-y-5">
               {/* Folder path input with Graphical Browse Folder Button */}
               <div className="space-y-2">
-                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Existing Framework Path</label>
+                <label className="text-xs font-bold text-slate-500 dark:text-gray-400 uppercase tracking-wider">Existing Framework Path</label>
                 <div className="flex gap-2">
                   <input
                     type="text"
                     value={extendFolder}
                     onChange={(e) => setExtendFolder(e.target.value)}
                     placeholder="e.g. C:\QAAgents\my_new_framework"
-                    className="flex-1 bg-gray-950 border border-gray-800 rounded-xl px-4 py-3 text-xs text-gray-200 font-mono focus:outline-none focus:border-indigo-500"
+                    className="flex-1 bg-slate-50 dark:bg-gray-950 border border-slate-200 dark:border-gray-800 rounded-xl px-4 py-3 text-xs text-slate-700 dark:text-gray-200 font-mono focus:outline-none focus:border-indigo-500"
                     required
                     disabled={loading}
                   />
                   <button
                     type="button"
                     onClick={() => handleBrowseFolder(setExtendFolder)}
-                    className="bg-gray-950 border border-gray-800 hover:border-gray-700 text-gray-400 hover:text-gray-200 px-3.5 rounded-xl transition-all active:scale-[0.95]"
+                    className="bg-slate-50 dark:bg-gray-950 border border-slate-200 dark:border-gray-800 hover:border-gray-700 text-slate-500 dark:text-gray-400 hover:text-slate-700 dark:text-gray-200 px-3.5 rounded-xl transition-all active:scale-[0.95]"
                     disabled={loading}
                     title="Select a directory graphically using Windows Folder Explorer Dialog"
                   >
@@ -416,17 +416,17 @@ function AutomationModule() {
 
               {/* Instruction Prompt input */}
               <div className="space-y-2">
-                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Generation Instructions</label>
+                <label className="text-xs font-bold text-slate-500 dark:text-gray-400 uppercase tracking-wider">Generation Instructions</label>
                 <textarea
                   value={instruction}
                   onChange={(e) => setInstruction(e.target.value)}
                   placeholder='e.g. "Create a ChatPage Page Object Model with locators for messageInput ("#msg-box") and sendBtn (".submit-button"). Include a sendMessage(msg) helper function."'
                   rows={6}
-                  className="w-full bg-gray-950 border border-gray-800 rounded-xl px-4 py-3 text-xs text-gray-200 focus:outline-none focus:border-indigo-500 leading-relaxed resize-y"
+                  className="w-full bg-slate-50 dark:bg-gray-950 border border-slate-200 dark:border-gray-800 rounded-xl px-4 py-3 text-xs text-slate-700 dark:text-gray-200 focus:outline-none focus:border-indigo-500 leading-relaxed resize-y"
                   required
                   disabled={loading}
                 />
-                <p className="text-[10px] text-gray-500 leading-normal">
+                <p className="text-[10px] text-slate-400 dark:text-gray-500 leading-normal">
                   * Playwright scans your local config files to auto-detect import structures, async patterns, and BasePage classes before generation!
                 </p>
               </div>
@@ -446,20 +446,20 @@ function AutomationModule() {
           <div className="col-span-7 space-y-6">
             {loading ? (
               /* Gorgeous step-by-step loading meter card for extender */
-              <div className="bg-gray-900 border border-gray-800 rounded-2xl p-10 flex flex-col justify-center items-center h-full min-h-[400px] animate-fadeIn space-y-6">
+              <div className="bg-white dark:bg-gray-900 border border-slate-200 dark:border-slate-200 dark:border-gray-800 shadow-sm transition-all rounded-2xl p-10 flex flex-col justify-center items-center h-full min-h-[400px] animate-fadeIn space-y-6">
                 <div className="relative w-24 h-24 flex items-center justify-center">
                   <div className="absolute inset-0 border-4 border-indigo-500/10 rounded-full"></div>
                   <div className="absolute inset-0 border-4 border-t-indigo-500 rounded-full animate-spin"></div>
-                  <span className="font-extrabold text-white text-lg font-mono">{progress}%</span>
+                  <span className="font-extrabold text-slate-800 dark:text-white text-lg font-mono">{progress}%</span>
                 </div>
                 
                 <div className="text-center space-y-2 max-w-sm">
-                  <h4 className="font-bold text-white text-sm uppercase tracking-wider animate-pulse text-indigo-400">Analyzing Repo Context</h4>
-                  <p className="text-xs text-gray-300 font-medium leading-relaxed font-mono h-12 flex items-center justify-center">{progressMsg}</p>
+                  <h4 className="font-bold text-slate-800 dark:text-white text-sm uppercase tracking-wider animate-pulse text-indigo-400">Analyzing Repo Context</h4>
+                  <p className="text-xs text-slate-600 dark:text-gray-300 font-medium leading-relaxed font-mono h-12 flex items-center justify-center">{progressMsg}</p>
                 </div>
 
                 {/* Simulated visual progress bar */}
-                <div className="w-full bg-gray-950 h-2.5 rounded-full overflow-hidden border border-gray-850 max-w-md">
+                <div className="w-full bg-slate-50 dark:bg-gray-950 h-2.5 rounded-full overflow-hidden border border-slate-200 dark:border-gray-850 max-w-md">
                   <div 
                     className="bg-indigo-500 h-full rounded-full transition-all duration-300 shadow-lg shadow-indigo-500/50"
                     style={{ width: `${progress}%` }}
@@ -467,19 +467,19 @@ function AutomationModule() {
                 </div>
               </div>
             ) : genResult ? (
-              <div className="bg-gray-900 border border-gray-800 rounded-2xl p-8 space-y-6 animate-fadeIn">
+              <div className="bg-white dark:bg-gray-900 border border-slate-200 dark:border-slate-200 dark:border-gray-800 shadow-sm transition-all rounded-2xl p-8 space-y-6 animate-fadeIn">
                 
                 {/* Multi-File dropdown selector shown if files count > 1 */}
                 {genResult.files && genResult.files.length > 1 && (
-                  <div className="space-y-2 border-b border-gray-850 pb-4 animate-fadeIn">
-                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">📁 Select File to Preview</label>
+                  <div className="space-y-2 border-b border-slate-200 dark:border-gray-850 pb-4 animate-fadeIn">
+                    <label className="text-xs font-bold text-slate-500 dark:text-gray-400 uppercase tracking-wider">📁 Select File to Preview</label>
                     <select
                       value={selectedFileIdx}
                       onChange={(e) => {
                         setSelectedExtFileIndex(parseInt(e.target.value, 10))
                         setWriteResult(null) // Reset saved confirm banner on file switch
                       }}
-                      className="w-full bg-gray-950 border border-gray-850 text-indigo-400 rounded-xl px-4 py-3 text-xs font-bold font-mono focus:outline-none focus:border-indigo-500 cursor-pointer"
+                      className="w-full bg-slate-50 dark:bg-gray-950 border border-slate-200 dark:border-gray-850 text-indigo-400 rounded-xl px-4 py-3 text-xs font-bold font-mono focus:outline-none focus:border-indigo-500 cursor-pointer"
                     >
                       {genResult.files.map((file, idx) => (
                         <option key={idx} value={idx}>
@@ -490,16 +490,16 @@ function AutomationModule() {
                   </div>
                 )}
 
-                <div className="border-b border-gray-800 pb-4 flex flex-wrap gap-4 items-center justify-between">
+                <div className="border-b border-slate-200 dark:border-gray-800 pb-4 flex flex-wrap gap-4 items-center justify-between">
                   <div className="flex-1 min-w-[250px]">
-                    <h3 className="font-bold text-white text-base flex items-center gap-2">
+                    <h3 className="font-bold text-slate-800 dark:text-white text-base flex items-center gap-2">
                       <FileCode className="text-indigo-400 animate-pulse" size={18} />
                       <span>Generated File Code Preview</span>
                     </h3>
                     
                     {/* Path editor */}
                     <div className="flex items-center gap-1.5 mt-2">
-                      <span className="text-[10px] font-bold text-gray-500 uppercase shrink-0">Path:</span>
+                      <span className="text-[10px] font-bold text-slate-400 dark:text-gray-500 uppercase shrink-0">Path:</span>
                       <input
                         type="text"
                         value={genResult.files && genResult.files[selectedFileIdx] ? genResult.files[selectedFileIdx].path : ''}
@@ -508,7 +508,7 @@ function AutomationModule() {
                           updatedFiles[selectedFileIdx].path = e.target.value
                           setGenResult({ ...genResult, files: updatedFiles })
                         }}
-                        className="bg-gray-950 border border-gray-850 px-2.5 py-1 text-[11px] font-bold font-mono text-indigo-400 rounded-lg focus:outline-none focus:border-indigo-500 flex-1"
+                        className="bg-slate-50 dark:bg-gray-950 border border-slate-200 dark:border-gray-850 px-2.5 py-1 text-[11px] font-bold font-mono text-indigo-400 rounded-lg focus:outline-none focus:border-indigo-500 flex-1"
                         required
                         title="Edit output destination file path if needed"
                       />
@@ -533,8 +533,8 @@ function AutomationModule() {
                     <CheckCircle className="text-emerald-400 mt-0.5 shrink-0" size={16} />
                     <div>
                       <h4 className="font-bold text-xs leading-none">File Saved Successfully! ✅</h4>
-                      <p className="text-[11px] mt-1.5 text-gray-400 leading-relaxed">
-                        Surgically added <code className="bg-gray-950 px-1 rounded font-bold font-mono text-indigo-400">{writeResult.relative_path}</code> directly to your framework at <code className="bg-gray-950 px-1 rounded font-mono">{extendFolder}</code>.
+                      <p className="text-[11px] mt-1.5 text-slate-500 dark:text-gray-400 leading-relaxed">
+                        Surgically added <code className="bg-slate-50 dark:bg-gray-950 px-1 rounded font-bold font-mono text-indigo-400">{writeResult.relative_path}</code> directly to your framework at <code className="bg-slate-50 dark:bg-gray-950 px-1 rounded font-mono">{extendFolder}</code>.
                       </p>
                     </div>
                   </div>
@@ -550,16 +550,16 @@ function AutomationModule() {
                       setGenResult({ ...genResult, files: updatedFiles })
                     }}
                     rows={16}
-                    className="w-full bg-gray-950 border border-gray-850 p-5 rounded-xl font-mono text-[11px] text-gray-300 focus:outline-none focus:border-indigo-500 leading-relaxed resize-y shadow-inner transition-all"
+                    className="w-full bg-slate-50 dark:bg-gray-950 border border-slate-200 dark:border-gray-850 p-5 rounded-xl font-mono text-[11px] text-slate-600 dark:text-gray-300 focus:outline-none focus:border-indigo-500 leading-relaxed resize-y shadow-inner transition-all"
                     required
                   />
                 </div>
               </div>
             ) : (
-              <div className="bg-gray-900 border border-gray-800 rounded-2xl p-12 text-center text-gray-500 h-full flex flex-col justify-center items-center min-h-[400px]">
+              <div className="bg-white dark:bg-gray-900 border border-slate-200 dark:border-slate-200 dark:border-gray-800 shadow-sm transition-all rounded-2xl p-12 text-center text-slate-400 dark:text-gray-500 h-full flex flex-col justify-center items-center min-h-[400px]">
                 <FileCode size={48} className="text-gray-800 mb-4" />
-                <h4 className="font-bold text-gray-300 text-base">No Code Generated Yet</h4>
-                <p className="text-xs text-gray-500 max-w-sm mx-auto mt-1 leading-relaxed font-medium">Input your existing local framework path and file description instructions on the left panel, then hit generate to inspect. Your generated scripts will appear here.</p>
+                <h4 className="font-bold text-slate-600 dark:text-gray-300 text-base">No Code Generated Yet</h4>
+                <p className="text-xs text-slate-400 dark:text-gray-500 max-w-sm mx-auto mt-1 leading-relaxed font-medium">Input your existing local framework path and file description instructions on the left panel, then hit generate to inspect. Your generated scripts will appear here.</p>
               </div>
             )}
           </div>

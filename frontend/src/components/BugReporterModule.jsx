@@ -197,19 +197,19 @@ function BugReporterModule() {
   return (
     <div className="grid grid-cols-12 gap-8 animate-fadeIn">
       {/* Sidebar: Bug reports list */}
-      <div className="col-span-4 bg-gray-900 border border-gray-800 rounded-2xl p-6 h-fit space-y-6">
-        <div className="flex items-center justify-between border-b border-gray-800 pb-4">
-          <h3 className="font-bold text-white text-base flex items-center gap-2">
+      <div className="col-span-4 bg-white dark:bg-gray-900 border border-slate-200 dark:border-slate-200 dark:border-gray-800 shadow-sm transition-all rounded-2xl p-6 h-fit space-y-6">
+        <div className="flex items-center justify-between border-b border-slate-200 dark:border-gray-800 pb-4">
+          <h3 className="font-bold text-slate-800 dark:text-white text-base flex items-center gap-2">
             <Bug size={18} className="text-indigo-400" />
             <span>Visual Bug Audits</span>
           </h3>
         </div>
 
         {/* Upload Screenshot Form */}
-        <form onSubmit={handleAnalyze} className="space-y-4 bg-gray-950 p-4 border border-gray-800/60 rounded-xl">
+        <form onSubmit={handleAnalyze} className="space-y-4 bg-slate-50 dark:bg-gray-950 p-4 border border-slate-200 dark:border-gray-800/60 rounded-xl">
           <p className="text-xs font-bold uppercase tracking-wider text-indigo-400">File New Bug Report</p>
           
-          <div className="border border-dashed border-gray-800 rounded-xl aspect-video relative flex flex-col items-center justify-center overflow-hidden hover:border-indigo-500/40 transition-colors bg-gray-900/50">
+          <div className="border border-dashed border-slate-200 dark:border-gray-800 rounded-xl aspect-video relative flex flex-col items-center justify-center overflow-hidden hover:border-indigo-500/40 transition-colors bg-slate-50/50 dark:bg-gray-900/50">
             {screenshotPreview ? (
               <div className="relative w-full h-full group select-none">
                 <img src={screenshotPreview} alt="Screenshot preview" className="w-full h-full object-cover" />
@@ -226,9 +226,9 @@ function BugReporterModule() {
               </div>
             ) : (
               <label className="cursor-pointer flex flex-col items-center justify-center p-6 text-center space-y-2 h-full w-full select-none">
-                <Upload className="text-gray-500" size={24} />
-                <span className="text-xs font-semibold text-gray-300">Drag or Upload Screenshot</span>
-                <span className="text-[10px] text-gray-500">Optional | Supports PNG, JPG (Max 5MB)</span>
+                <Upload className="text-slate-400 dark:text-gray-500" size={24} />
+                <span className="text-xs font-semibold text-slate-600 dark:text-gray-300">Drag or Upload Screenshot</span>
+                <span className="text-[10px] text-slate-400 dark:text-gray-500">Optional | Supports PNG, JPG (Max 5MB)</span>
                 <input type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
               </label>
             )}
@@ -240,7 +240,7 @@ function BugReporterModule() {
               value={userRemarks}
               onChange={(e) => setUserRemarks(e.target.value)}
               rows={3}
-              className="w-full bg-gray-900 border border-gray-800/80 rounded-lg p-3 text-xs text-gray-200 focus:outline-none focus:border-indigo-500 placeholder:text-gray-600 resize-none leading-relaxed"
+              className="w-full bg-white dark:bg-gray-900 border border-slate-200 dark:border-slate-200 dark:border-gray-800 shadow-sm transition-all/80 rounded-lg p-3 text-xs text-slate-700 dark:text-gray-200 focus:outline-none focus:border-indigo-500 placeholder:text-gray-600 resize-none leading-relaxed"
               disabled={analyzing}
             />
           </div>
@@ -266,7 +266,7 @@ function BugReporterModule() {
         {/* Reports listing */}
         <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
           {reports.length === 0 ? (
-            <p className="text-xs text-gray-500 text-center py-4">No bug reports compiled yet.</p>
+            <p className="text-xs text-slate-400 dark:text-gray-500 text-center py-4">No bug reports compiled yet.</p>
           ) : (
             reports.map((r) => (
               <button
@@ -275,12 +275,12 @@ function BugReporterModule() {
                 className={`w-full text-left p-3.5 rounded-xl border transition-all flex items-center justify-between ${
                   activeReport?.id === r.id
                     ? 'bg-indigo-600/10 border-indigo-500/20 text-indigo-300 font-semibold'
-                    : 'bg-gray-950/40 border-gray-800/40 text-gray-400 hover:border-gray-800 hover:text-gray-200'
+                    : 'bg-slate-50 dark:bg-gray-950/40 border-slate-200 dark:border-gray-800/40 text-slate-500 dark:text-gray-400 hover:border-slate-200 dark:border-gray-800 hover:text-slate-700 dark:text-gray-200'
                 }`}
               >
                 <div className="truncate pr-4">
                   <p className="text-sm truncate">{r.title}</p>
-                  <p className="text-xs text-gray-500 truncate mt-0.5">{r.severity} Severity</p>
+                  <p className="text-xs text-slate-400 dark:text-gray-500 truncate mt-0.5">{r.severity} Severity</p>
                 </div>
                 <ChevronRightActive active={activeReport?.id === r.id} />
               </button>
@@ -295,9 +295,9 @@ function BugReporterModule() {
           <div className={`grid ${activeReport.screenshot_path ? 'grid-cols-2' : 'grid-cols-1'} gap-8 animate-fadeIn`}>
             {/* Visual Screenshot Display (Conditionally rendered only if a screenshot was uploaded) */}
             {activeReport.screenshot_path && (
-              <div className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden shadow-sm h-fit">
-                <div className="p-4 border-b border-gray-800 flex items-center justify-between bg-gray-900/50 select-none">
-                  <span className="text-xs font-bold text-gray-300 flex items-center gap-1.5">
+              <div className="bg-white dark:bg-gray-900 border border-slate-200 dark:border-slate-200 dark:border-gray-800 shadow-sm transition-all rounded-2xl overflow-hidden shadow-sm h-fit">
+                <div className="p-4 border-b border-slate-200 dark:border-gray-800 flex items-center justify-between bg-slate-50/50 dark:bg-gray-900/50 select-none">
+                  <span className="text-xs font-bold text-slate-600 dark:text-gray-300 flex items-center gap-1.5">
                     <ImageIcon size={14} className="text-indigo-400" />
                     <span>Audited Screenshot</span>
                   </span>
@@ -306,15 +306,15 @@ function BugReporterModule() {
                   <img
                     src={`${STATIC_URL}/${activeReport.screenshot_path}`}
                     alt="Visual audit reference"
-                    className="max-h-[360px] w-full object-contain rounded-lg border border-gray-800"
+                    className="max-h-[360px] w-full object-contain rounded-lg border border-slate-200 dark:border-gray-800"
                   />
                 </div>
               </div>
             )}
 
             {/* AI Vision analysis details and Export */}
-            <div className="bg-gray-900 border border-gray-800 rounded-2xl p-8 space-y-6 h-fit">
-              <div className="border-b border-gray-800 pb-5 flex items-center justify-between select-none">
+            <div className="bg-white dark:bg-gray-900 border border-slate-200 dark:border-slate-200 dark:border-gray-800 shadow-sm transition-all rounded-2xl p-8 space-y-6 h-fit">
+              <div className="border-b border-slate-200 dark:border-gray-800 pb-5 flex items-center justify-between select-none">
                 <div>
                   <h3 className="font-bold text-lg text-white pr-4">{activeReport.title}</h3>
                   <div className="flex gap-2.5 mt-2">
@@ -325,7 +325,7 @@ function BugReporterModule() {
                     }`}>
                       {activeReport.severity}
                     </span>
-                    <span className="text-[10px] uppercase tracking-wider font-semibold text-gray-500 bg-gray-950 border border-gray-800 px-2.5 py-0.5 rounded-full">
+                    <span className="text-[10px] uppercase tracking-wider font-semibold text-slate-400 dark:text-gray-500 bg-slate-50 dark:bg-gray-950 border border-slate-200 dark:border-gray-800 px-2.5 py-0.5 rounded-full">
                       {activeReport.status.replace(/submitted_to_/g, '').replace(/_/g, ' ')}
                     </span>
                   </div>
@@ -361,9 +361,9 @@ function BugReporterModule() {
                     </a>
                   </div>
                 ) : (
-                  <div className="p-4 bg-gray-950 border border-gray-800/80 rounded-xl space-y-3">
-                    <p className="text-xs font-bold uppercase tracking-wider text-gray-400 select-none">Bug Tracker Exporter</p>
-                    <p className="text-xs text-gray-500 leading-relaxed">
+                  <div className="p-4 bg-slate-50 dark:bg-gray-950 border border-slate-200 dark:border-gray-800/80 rounded-xl space-y-3">
+                    <p className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-gray-400 select-none">Bug Tracker Exporter</p>
+                    <p className="text-xs text-slate-400 dark:text-gray-500 leading-relaxed">
                       Publish this bug report directly to your active connected issue tracking board. 
                       {activeReport.screenshot_path ? " The visual screenshot attachment will automatically be uploaded if supported." : " No attachment will be sent since this is a text-only bug."}
                     </p>
@@ -389,17 +389,17 @@ function BugReporterModule() {
               </div>
 
               {/* Description visual audit output */}
-              <div className="space-y-4 bg-gray-950 border border-gray-800/80 p-5 rounded-xl max-h-[250px] overflow-y-auto">
-                <p className="text-xs font-bold uppercase tracking-wider text-indigo-400 border-b border-gray-800/60 pb-2 select-none">Layout Audit Log</p>
-                <p className="text-xs text-gray-300 leading-relaxed font-mono whitespace-pre-line">{activeReport.description.replace(/h3\. /g, '\n\n**').replace(/\n\n\*\*/, '**')}</p>
+              <div className="space-y-4 bg-slate-50 dark:bg-gray-950 border border-slate-200 dark:border-gray-800/80 p-5 rounded-xl max-h-[250px] overflow-y-auto">
+                <p className="text-xs font-bold uppercase tracking-wider text-indigo-400 border-b border-slate-200 dark:border-gray-800/60 pb-2 select-none">Layout Audit Log</p>
+                <p className="text-xs text-slate-600 dark:text-gray-300 leading-relaxed font-mono whitespace-pre-line">{activeReport.description.replace(/h3\. /g, '\n\n**').replace(/\n\n\*\*/, '**')}</p>
               </div>
             </div>
           </div>
         ) : (
-          <div className="bg-gray-900 border border-gray-800 rounded-2xl p-12 text-center text-gray-500 select-none">
+          <div className="bg-white dark:bg-gray-900 border border-slate-200 dark:border-slate-200 dark:border-gray-800 shadow-sm transition-all rounded-2xl p-12 text-center text-slate-400 dark:text-gray-500 select-none">
             <Bug size={48} className="mx-auto text-gray-700 mb-4" />
-            <h4 className="font-bold text-gray-300 text-lg">No Active Bug Selected</h4>
-            <p className="text-sm text-gray-500 max-w-sm mx-auto mt-1 leading-relaxed">Upload a UI layout screenshot or type in a text-only bug description on the sidebar to audit and draft bug details.</p>
+            <h4 className="font-bold text-slate-600 dark:text-gray-300 text-lg">No Active Bug Selected</h4>
+            <p className="text-sm text-slate-400 dark:text-gray-500 max-w-sm mx-auto mt-1 leading-relaxed">Upload a UI layout screenshot or type in a text-only bug description on the sidebar to audit and draft bug details.</p>
           </div>
         )}
       </div>

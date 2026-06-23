@@ -150,16 +150,16 @@ function TestCaseModule() {
   return (
     <div className="grid grid-cols-12 gap-8 animate-fadeIn">
       {/* Sidebar: Test suites list */}
-      <div className="col-span-4 bg-gray-900 border border-gray-800 rounded-2xl p-6 h-fit space-y-6">
-        <div className="flex items-center justify-between border-b border-gray-800 pb-4">
-          <h3 className="font-bold text-white text-base flex items-center gap-2">
+      <div className="col-span-4 bg-white dark:bg-gray-900 border border-slate-200 dark:border-slate-200 dark:border-gray-800 shadow-sm transition-all rounded-2xl p-6 h-fit space-y-6">
+        <div className="flex items-center justify-between border-b border-slate-200 dark:border-gray-800 pb-4">
+          <h3 className="font-bold text-slate-800 dark:text-white text-base flex items-center gap-2">
             <ClipboardList size={18} className="text-indigo-400" />
             <span>Generated Suites</span>
           </h3>
         </div>
 
         {/* Requirements form */}
-        <form onSubmit={handleGenerate} className="space-y-4 bg-gray-950 p-4 border border-gray-800/60 rounded-xl">
+        <form onSubmit={handleGenerate} className="space-y-4 bg-slate-50 dark:bg-gray-950 p-4 border border-slate-200 dark:border-gray-800/60 rounded-xl">
           <p className="text-xs font-bold uppercase tracking-wider text-indigo-400">Generate Suite</p>
           <div className="space-y-1">
             <input
@@ -167,7 +167,7 @@ function TestCaseModule() {
               placeholder="Suite title (e.g. Checkout Cart)"
               value={reqTitle}
               onChange={(e) => setReqTitle(e.target.value)}
-              className="w-full bg-gray-900 border border-gray-800/80 rounded-lg px-3 py-2.5 text-xs text-gray-200 focus:outline-none focus:border-indigo-500"
+              className="w-full bg-white dark:bg-gray-900 border border-slate-200 dark:border-slate-200 dark:border-gray-800 shadow-sm transition-all/80 rounded-lg px-3 py-2.5 text-xs text-slate-700 dark:text-gray-200 focus:outline-none focus:border-indigo-500"
               disabled={generating}
             />
           </div>
@@ -175,7 +175,7 @@ function TestCaseModule() {
             <select
               value={mode}
               onChange={(e) => setMode(e.target.value)}
-              className="w-full bg-gray-900 border border-gray-800/80 rounded-lg px-3 py-2.5 text-xs text-gray-255 focus:outline-none focus:border-indigo-500 cursor-pointer text-gray-300"
+              className="w-full bg-white dark:bg-gray-900 border border-slate-200 dark:border-slate-200 dark:border-gray-800 shadow-sm transition-all/80 rounded-lg px-3 py-2.5 text-xs text-gray-255 focus:outline-none focus:border-indigo-500 cursor-pointer text-slate-600 dark:text-gray-300"
               disabled={generating}
             >
               <option value="combined">Combined (UI + Functional)</option>
@@ -189,7 +189,7 @@ function TestCaseModule() {
               value={requirements}
               onChange={(e) => setRequirements(e.target.value)}
               rows={4}
-              className="w-full bg-gray-900 border border-gray-800/80 rounded-lg p-3 text-xs text-gray-200 focus:outline-none focus:border-indigo-500 placeholder:text-gray-600 resize-none leading-relaxed"
+              className="w-full bg-white dark:bg-gray-900 border border-slate-200 dark:border-slate-200 dark:border-gray-800 shadow-sm transition-all/80 rounded-lg p-3 text-xs text-slate-700 dark:text-gray-200 focus:outline-none focus:border-indigo-500 placeholder:text-gray-600 resize-none leading-relaxed"
               required
               disabled={generating}
             />
@@ -216,7 +216,7 @@ function TestCaseModule() {
         {/* Suites listing */}
         <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
           {suites.length === 0 ? (
-            <p className="text-xs text-gray-500 text-center py-4">No test suites created yet.</p>
+            <p className="text-xs text-slate-400 dark:text-gray-500 text-center py-4">No test suites created yet.</p>
           ) : (
             suites.map((s) => (
               <button
@@ -225,12 +225,12 @@ function TestCaseModule() {
                 className={`w-full text-left p-3.5 rounded-xl border transition-all flex items-center justify-between ${
                   activeSuite?.id === s.id
                     ? 'bg-indigo-600/10 border-indigo-500/20 text-indigo-300 font-semibold'
-                    : 'bg-gray-950/40 border-gray-800/40 text-gray-400 hover:border-gray-800 hover:text-gray-200'
+                    : 'bg-slate-50 dark:bg-gray-950/40 border-slate-200 dark:border-gray-800/40 text-slate-500 dark:text-gray-400 hover:border-slate-200 dark:border-gray-800 hover:text-slate-700 dark:text-gray-200'
                 }`}
               >
                 <div className="truncate pr-4">
                   <p className="text-sm truncate">{s.title}</p>
-                  <p className="text-xs text-gray-500 truncate mt-0.5">{s.test_case_count} cases</p>
+                  <p className="text-xs text-slate-400 dark:text-gray-500 truncate mt-0.5">{s.test_case_count} cases</p>
                 </div>
                 <ChevronRightActive active={activeSuite?.id === s.id} />
               </button>
@@ -242,11 +242,11 @@ function TestCaseModule() {
       {/* Main Panel: Suite details viewer */}
       <div className="col-span-8">
         {activeSuite ? (
-          <div className="bg-gray-900 border border-gray-800 rounded-2xl p-8 space-y-6">
-            <div className="border-b border-gray-800 pb-5 flex items-center justify-between select-none">
+          <div className="bg-white dark:bg-gray-900 border border-slate-200 dark:border-slate-200 dark:border-gray-800 shadow-sm transition-all rounded-2xl p-8 space-y-6">
+            <div className="border-b border-slate-200 dark:border-gray-800 pb-5 flex items-center justify-between select-none">
               <div>
                 <h3 className="font-bold text-lg text-white">{activeSuite.title}</h3>
-                <p className="text-xs text-gray-500 mt-1">Created on: {new Date(activeSuite.created_at).toLocaleString()}</p>
+                <p className="text-xs text-slate-400 dark:text-gray-500 mt-1">Created on: {new Date(activeSuite.created_at).toLocaleString()}</p>
               </div>
               <div className="flex items-center gap-3">
                 <button
@@ -272,7 +272,7 @@ function TestCaseModule() {
               {activeSuite.test_cases?.map((tc) => (
                 <div
                   key={tc.id}
-                  className="border border-gray-800/60 rounded-xl overflow-hidden bg-gray-950/25 hover:border-gray-800 transition-colors"
+                  className="border border-slate-200 dark:border-gray-800/60 rounded-xl overflow-hidden bg-slate-50 dark:bg-gray-950/25 hover:border-slate-200 dark:border-gray-800 transition-colors"
                 >
                   {/* Header click */}
                   <div
@@ -283,7 +283,7 @@ function TestCaseModule() {
                       <span className="text-xs font-bold text-indigo-400 bg-indigo-500/5 border border-indigo-500/10 px-2.5 py-1 rounded">
                         {tc.test_id}
                       </span>
-                      <h4 className="font-bold text-sm text-gray-200">{tc.title}</h4>
+                      <h4 className="font-bold text-sm text-slate-700 dark:text-gray-200">{tc.title}</h4>
                     </div>
 
                     <div className="flex items-center gap-3 shrink-0">
@@ -296,28 +296,28 @@ function TestCaseModule() {
                       }`}>
                         {tc.priority}
                       </span>
-                      {expandedCaseId === tc.id ? <ChevronUp size={16} className="text-gray-500" /> : <ChevronDown size={16} className="text-gray-500" />}
+                      {expandedCaseId === tc.id ? <ChevronUp size={16} className="text-slate-400 dark:text-gray-500" /> : <ChevronDown size={16} className="text-slate-400 dark:text-gray-500" />}
                     </div>
                   </div>
 
                   {/* Body expansion */}
                   {expandedCaseId === tc.id && (
-                    <div className="p-5 border-t border-gray-800/60 bg-gray-950/50 space-y-4 animate-slideDown">
+                    <div className="p-5 border-t border-slate-200 dark:border-gray-800/60 bg-slate-50 dark:bg-gray-950/50 space-y-4 animate-slideDown">
                       <div className="space-y-1">
-                        <p className="text-xs font-bold uppercase tracking-wider text-gray-500">Test Objective</p>
-                        <p className="text-sm text-gray-300 leading-relaxed">{tc.description}</p>
+                        <p className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-gray-500">Test Objective</p>
+                        <p className="text-sm text-slate-600 dark:text-gray-300 leading-relaxed">{tc.description}</p>
                       </div>
 
                       {tc.preconditions && (
                         <div className="space-y-1">
-                          <p className="text-xs font-bold uppercase tracking-wider text-gray-500">Preconditions</p>
-                          <p className="text-sm text-gray-300 leading-relaxed bg-gray-900 border border-gray-800 p-3 rounded-lg font-mono text-[11px]">{tc.preconditions}</p>
+                          <p className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-gray-500">Preconditions</p>
+                          <p className="text-sm text-slate-600 dark:text-gray-300 leading-relaxed bg-white dark:bg-gray-900 border border-slate-200 dark:border-slate-200 dark:border-gray-800 shadow-sm transition-all p-3 rounded-lg font-mono text-[11px]">{tc.preconditions}</p>
                         </div>
                       )}
 
                       <div className="space-y-2">
-                        <p className="text-xs font-bold uppercase tracking-wider text-gray-500">Action Steps</p>
-                        <ol className="space-y-1.5 list-decimal list-inside text-sm text-gray-300">
+                        <p className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-gray-500">Action Steps</p>
+                        <ol className="space-y-1.5 list-decimal list-inside text-sm text-slate-600 dark:text-gray-300">
                           {tc.steps?.map((step, idx) => (
                             <li key={idx} className="leading-relaxed pl-1">{step}</li>
                           ))}
@@ -325,7 +325,7 @@ function TestCaseModule() {
                       </div>
 
                       <div className="space-y-1">
-                        <p className="text-xs font-bold uppercase tracking-wider text-gray-500">Expected Outcome</p>
+                        <p className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-gray-500">Expected Outcome</p>
                         <div className="p-3.5 bg-emerald-500/5 border border-emerald-500/10 rounded-lg flex items-start gap-2.5 text-sm text-emerald-300/90 leading-relaxed">
                           <CheckCircle2 size={16} className="text-emerald-400 shrink-0 mt-0.5" />
                           <span>{tc.expected_result}</span>
@@ -338,10 +338,10 @@ function TestCaseModule() {
             </div>
           </div>
         ) : (
-          <div className="bg-gray-900 border border-gray-800 rounded-2xl p-12 text-center text-gray-500 select-none">
+          <div className="bg-white dark:bg-gray-900 border border-slate-200 dark:border-slate-200 dark:border-gray-800 shadow-sm transition-all rounded-2xl p-12 text-center text-slate-400 dark:text-gray-500 select-none">
             <ClipboardList size={48} className="mx-auto text-gray-700 mb-4" />
-            <h4 className="font-bold text-gray-300 text-lg">No Active Suite Selected</h4>
-            <p className="text-sm text-gray-500 max-w-sm mx-auto mt-1 leading-relaxed">Paste functional specifications or choose an established test case suite from the sidebar to inspect structural outcomes.</p>
+            <h4 className="font-bold text-slate-600 dark:text-gray-300 text-lg">No Active Suite Selected</h4>
+            <p className="text-sm text-slate-400 dark:text-gray-500 max-w-sm mx-auto mt-1 leading-relaxed">Paste functional specifications or choose an established test case suite from the sidebar to inspect structural outcomes.</p>
           </div>
         )}
       </div>

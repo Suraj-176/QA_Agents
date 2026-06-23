@@ -177,22 +177,22 @@ function RegressionModule() {
   return (
     <div className="grid grid-cols-12 gap-8 animate-fadeIn">
       {/* Sidebar: Baselines list */}
-      <div className="col-span-4 bg-gray-900 border border-gray-800 rounded-2xl p-6 h-fit space-y-6">
-        <div className="flex items-center justify-between border-b border-gray-800 pb-4">
-          <h3 className="font-bold text-white text-base flex items-center gap-2">
+      <div className="col-span-4 bg-white dark:bg-gray-900 border border-slate-200 dark:border-slate-200 dark:border-gray-800 shadow-sm transition-all rounded-2xl p-6 h-fit space-y-6">
+        <div className="flex items-center justify-between border-b border-slate-200 dark:border-gray-800 pb-4">
+          <h3 className="font-bold text-slate-800 dark:text-white text-base flex items-center gap-2">
             <Eye size={18} className="text-indigo-400" />
             <span>Visual Baselines</span>
           </h3>
           <button
             onClick={fetchBaselines}
-            className="text-gray-500 hover:text-gray-300 transition-colors"
+            className="text-slate-400 dark:text-gray-500 hover:text-slate-600 dark:text-gray-300 transition-colors"
           >
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
           </button>
         </div>
 
         {/* Create Baseline Form */}
-        <form onSubmit={handleCreateBaseline} className="space-y-4 bg-gray-950 p-4 border border-gray-800/60 rounded-xl">
+        <form onSubmit={handleCreateBaseline} className="space-y-4 bg-slate-50 dark:bg-gray-950 p-4 border border-slate-200 dark:border-gray-800/60 rounded-xl">
           <p className="text-xs font-bold uppercase tracking-wider text-indigo-400">Establish New Base</p>
           <div className="space-y-1">
             <input
@@ -200,7 +200,7 @@ function RegressionModule() {
               placeholder="e.g. Landing Page"
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
-              className="w-full bg-gray-900 border border-gray-800/80 rounded-lg px-3 py-2 text-xs text-gray-200 focus:outline-none focus:border-indigo-500"
+              className="w-full bg-white dark:bg-gray-900 border border-slate-200 dark:border-slate-200 dark:border-gray-800 shadow-sm transition-all/80 rounded-lg px-3 py-2 text-xs text-slate-700 dark:text-gray-200 focus:outline-none focus:border-indigo-500"
               required
             />
           </div>
@@ -210,7 +210,7 @@ function RegressionModule() {
               placeholder="https://example.com"
               value={newUrl}
               onChange={(e) => setNewUrl(e.target.value)}
-              className="w-full bg-gray-900 border border-gray-800/80 rounded-lg px-3 py-2 text-xs text-gray-200 focus:outline-none focus:border-indigo-500"
+              className="w-full bg-white dark:bg-gray-900 border border-slate-200 dark:border-slate-200 dark:border-gray-800 shadow-sm transition-all/80 rounded-lg px-3 py-2 text-xs text-slate-700 dark:text-gray-200 focus:outline-none focus:border-indigo-500"
               required
             />
           </div>
@@ -227,7 +227,7 @@ function RegressionModule() {
         {/* Baselines listing */}
         <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
           {baselines.length === 0 ? (
-            <p className="text-xs text-gray-500 text-center py-4">No baselines established yet.</p>
+            <p className="text-xs text-slate-400 dark:text-gray-500 text-center py-4">No baselines established yet.</p>
           ) : (
             baselines.map((b) => (
               <button
@@ -240,12 +240,12 @@ function RegressionModule() {
                 className={`w-full text-left p-3.5 rounded-xl border transition-all flex items-center justify-between ${
                   activeBaseline?.id === b.id
                     ? 'bg-indigo-600/10 border-indigo-500/20 text-indigo-300 font-semibold'
-                    : 'bg-gray-950/40 border-gray-800/40 text-gray-400 hover:border-gray-800 hover:text-gray-200'
+                    : 'bg-slate-50 dark:bg-gray-950/40 border-slate-200 dark:border-gray-800/40 text-slate-500 dark:text-gray-400 hover:border-slate-200 dark:border-gray-800 hover:text-slate-700 dark:text-gray-200'
                 }`}
               >
                 <div className="truncate pr-4">
                   <p className="text-sm truncate">{b.name}</p>
-                  <p className="text-xs text-gray-500 truncate mt-0.5">{b.url}</p>
+                  <p className="text-xs text-slate-400 dark:text-gray-500 truncate mt-0.5">{b.url}</p>
                 </div>
                 <ChevronRightActive active={activeBaseline?.id === b.id} />
               </button>
@@ -259,8 +259,8 @@ function RegressionModule() {
         {activeBaseline ? (
           <>
             {/* Run Visual Test form */}
-            <div className="bg-gray-900 border border-gray-800 rounded-2xl p-8 space-y-5">
-              <div className="flex items-center justify-between border-b border-gray-800/60 pb-3 select-none">
+            <div className="bg-white dark:bg-gray-900 border border-slate-200 dark:border-slate-200 dark:border-gray-800 shadow-sm transition-all rounded-2xl p-8 space-y-5">
+              <div className="flex items-center justify-between border-b border-slate-200 dark:border-gray-800/60 pb-3 select-none">
                 <h3 className="font-bold text-base text-white">🔍 Compare Base of "{activeBaseline.name}"</h3>
                 <div className="flex items-center gap-3">
                   {/* Re-capture Button */}
@@ -291,7 +291,7 @@ function RegressionModule() {
                   value={targetUrl}
                   onChange={(e) => setTargetUrl(e.target.value)}
                   placeholder="Enter target test url (default: baseline url)..."
-                  className="flex-1 bg-gray-950 border border-gray-800 rounded-xl px-4 py-3 text-sm text-gray-200 focus:outline-none focus:border-indigo-500 transition-colors"
+                  className="flex-1 bg-slate-50 dark:bg-gray-950 border border-slate-200 dark:border-gray-800 rounded-xl px-4 py-3 text-sm text-slate-700 dark:text-gray-200 focus:outline-none focus:border-indigo-500 transition-colors"
                   required
                   disabled={testing}
                 />
@@ -317,11 +317,11 @@ function RegressionModule() {
 
             {/* Test Results list */}
             {testResult && (
-              <div className="bg-gray-900 border border-gray-800 rounded-2xl p-8 space-y-6 animate-fadeIn">
-                <div className="border-b border-gray-800 pb-4 flex items-center justify-between select-none">
+              <div className="bg-white dark:bg-gray-900 border border-slate-200 dark:border-slate-200 dark:border-gray-800 shadow-sm transition-all rounded-2xl p-8 space-y-6 animate-fadeIn">
+                <div className="border-b border-slate-200 dark:border-gray-800 pb-4 flex items-center justify-between select-none">
                   <div>
                     <h3 className="font-bold text-lg text-white">Visual Comparison Report</h3>
-                    <p className="text-xs text-gray-400 mt-1">Target URL: <span className="text-gray-300 font-semibold">{testResult.target_url}</span></p>
+                    <p className="text-xs text-slate-500 dark:text-gray-400 mt-1">Target URL: <span className="text-slate-600 dark:text-gray-300 font-semibold">{testResult.target_url}</span></p>
                   </div>
                   <div className={`px-4 py-1.5 border rounded-full text-xs font-bold flex items-center gap-1.5 ${
                     testResult.summary.includes('Visual Regressions Detected')
@@ -336,9 +336,9 @@ function RegressionModule() {
                 {/* Grid of Viewports */}
                 <div className="grid grid-cols-3 gap-6">
                   {testResult.results?.map((res) => (
-                    <div key={res.id} className="bg-gray-950 border border-gray-800/80 p-5 rounded-xl space-y-4">
-                      <div className="flex items-center justify-between border-b border-gray-800 pb-3 select-none">
-                        <span className="text-sm font-bold text-gray-200 capitalize">{res.viewport} Viewport</span>
+                    <div key={res.id} className="bg-slate-50 dark:bg-gray-950 border border-slate-200 dark:border-gray-800/80 p-5 rounded-xl space-y-4">
+                      <div className="flex items-center justify-between border-b border-slate-200 dark:border-gray-800 pb-3 select-none">
+                        <span className="text-sm font-bold text-slate-700 dark:text-gray-200 capitalize">{res.viewport} Viewport</span>
                         <span className={`text-xs px-2.5 py-1 rounded-full font-semibold ${
                           res.is_mismatch
                             ? 'bg-rose-500/10 text-rose-400 border border-rose-500/10'
@@ -352,21 +352,21 @@ function RegressionModule() {
                       <div className="grid grid-cols-3 gap-2 text-center text-xs font-semibold">
                         <button
                           onClick={() => setActiveModalImg(`${STATIC_URL}/${res.baseline_image_path}`)}
-                          className="bg-gray-900 border border-gray-800 hover:border-indigo-500/30 p-2.5 rounded-lg text-gray-400 hover:text-gray-200 transition-all flex flex-col items-center gap-1"
+                          className="bg-white dark:bg-gray-900 border border-slate-200 dark:border-slate-200 dark:border-gray-800 shadow-sm transition-all hover:border-indigo-500/30 p-2.5 rounded-lg text-slate-500 dark:text-gray-400 hover:text-slate-700 dark:text-gray-200 transition-all flex flex-col items-center gap-1"
                         >
                           <ImageIcon size={14} />
                           <span>Base</span>
                         </button>
                         <button
                           onClick={() => setActiveModalImg(`${STATIC_URL}/${res.run_image_path}`)}
-                          className="bg-gray-900 border border-gray-800 hover:border-indigo-500/30 p-2.5 rounded-lg text-gray-400 hover:text-gray-200 transition-all flex flex-col items-center gap-1"
+                          className="bg-white dark:bg-gray-900 border border-slate-200 dark:border-slate-200 dark:border-gray-800 shadow-sm transition-all hover:border-indigo-500/30 p-2.5 rounded-lg text-slate-500 dark:text-gray-400 hover:text-slate-700 dark:text-gray-200 transition-all flex flex-col items-center gap-1"
                         >
                           <ImageIcon size={14} />
                           <span>Run</span>
                         </button>
                         <button
                           onClick={() => setActiveModalImg(`${STATIC_URL}/${res.diff_image_path}`)}
-                          className="bg-gray-900 border border-gray-800 hover:border-indigo-500/30 p-2.5 rounded-lg text-gray-400 hover:text-gray-200 transition-all flex flex-col items-center gap-1"
+                          className="bg-white dark:bg-gray-900 border border-slate-200 dark:border-slate-200 dark:border-gray-800 shadow-sm transition-all hover:border-indigo-500/30 p-2.5 rounded-lg text-slate-500 dark:text-gray-400 hover:text-slate-700 dark:text-gray-200 transition-all flex flex-col items-center gap-1"
                           disabled={!res.diff_image_path}
                         >
                           <ImageIcon size={14} className="text-rose-400" />
@@ -381,13 +381,13 @@ function RegressionModule() {
 
             {/* Baseline screenshot references */}
             {!testResult && (
-              <div className="bg-gray-900 border border-gray-800 rounded-2xl p-8 space-y-6">
+              <div className="bg-white dark:bg-gray-900 border border-slate-200 dark:border-slate-200 dark:border-gray-800 shadow-sm transition-all rounded-2xl p-8 space-y-6">
                 <h3 className="font-bold text-base text-white">🖼️ Established Baseline Viewports</h3>
                 <div className="grid grid-cols-3 gap-6">
                   {activeBaseline.screenshots?.map((scr) => (
-                    <div key={scr.id} className="bg-gray-950 border border-gray-800/80 rounded-xl overflow-hidden group">
-                      <div className="p-4 border-b border-gray-800 flex items-center justify-between select-none">
-                        <span className="text-xs font-bold text-gray-300 capitalize">{scr.viewport} frame</span>
+                    <div key={scr.id} className="bg-slate-50 dark:bg-gray-950 border border-slate-200 dark:border-gray-800/80 rounded-xl overflow-hidden group">
+                      <div className="p-4 border-b border-slate-200 dark:border-gray-800 flex items-center justify-between select-none">
+                        <span className="text-xs font-bold text-slate-600 dark:text-gray-300 capitalize">{scr.viewport} frame</span>
                       </div>
                       <div className="relative aspect-video bg-gray-900 flex items-center justify-center cursor-zoom-in" onClick={() => setActiveModalImg(`${STATIC_URL}/${scr.image_path}`)}>
                         <img
@@ -403,10 +403,10 @@ function RegressionModule() {
             )}
           </>
         ) : (
-          <div className="bg-gray-900 border border-gray-800 rounded-2xl p-12 text-center text-gray-500 select-none">
+          <div className="bg-white dark:bg-gray-900 border border-slate-200 dark:border-slate-200 dark:border-gray-800 shadow-sm transition-all rounded-2xl p-12 text-center text-slate-400 dark:text-gray-500 select-none">
             <Eye size={48} className="mx-auto text-gray-700 mb-4" />
-            <h4 className="font-bold text-gray-300 text-lg">No Active Baseline Selected</h4>
-            <p className="text-sm text-gray-500 max-w-sm mx-auto mt-1 leading-relaxed">Establish or select an established visual baseline from the left-side bar list to run automated layout reviews.</p>
+            <h4 className="font-bold text-slate-600 dark:text-gray-300 text-lg">No Active Baseline Selected</h4>
+            <p className="text-sm text-slate-400 dark:text-gray-500 max-w-sm mx-auto mt-1 leading-relaxed">Establish or select an established visual baseline from the left-side bar list to run automated layout reviews.</p>
           </div>
         )}
       </div>
@@ -417,7 +417,7 @@ function RegressionModule() {
           onClick={() => setActiveModalImg(null)}
           className="fixed inset-0 z-50 bg-black/90 backdrop-blur-sm flex items-center justify-center p-12 animate-fadeIn cursor-zoom-out"
         >
-          <div className="relative max-w-5xl max-h-[85vh] overflow-auto rounded-lg bg-gray-900 p-2 shadow-2xl border border-gray-800">
+          <div className="relative max-w-5xl max-h-[85vh] overflow-auto rounded-lg bg-gray-900 p-2 shadow-2xl border border-slate-200 dark:border-gray-800">
             <img
               src={activeModalImg}
               alt="Visual inspect zoom"
