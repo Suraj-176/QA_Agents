@@ -1,4 +1,7 @@
+import os
 import base64
+import urllib.request
+import httpx
 from io import BytesIO
 from PIL import Image
 import openai
@@ -7,7 +10,14 @@ import google.generativeai as genai
 
 class LLMAdapter:
     @staticmethod
-    async def generate_text(provider: str, model: str, api_key: str, prompt: str) -> str:
+    async def generate_text(
+        provider: str, 
+        model: str, 
+        api_key: str, 
+        prompt: str,
+        azure_endpoint: str = None,
+        azure_api_version: str = None
+    ) -> str:
         """Helper to dynamically invoke the correct LLM library for text generation."""
         provider = provider.lower().strip()
         
@@ -48,6 +58,93 @@ class LLMAdapter:
             )
             return response.choices[0].message.content
 
+        elif provider == "azure":
+            # Support Azure OpenAI natively using standard synchronous clients to prevent win32 asyncio getaddrinfo DNS resolution failures!
+            api_key_clean = api_key.strip()
+            azure_key = api_key_clean
+            
+            final_endpoint = azure_endpoint if azure_endpoint else os.environ.get("AZURE_OPENAI_ENDPOINT", "")
+            final_api_version = azure_api_version if azure_api_version else os.environ.get("AZURE_OPENAI_API_VERSION", "2023-05-15")
+
+            # Backward-compatibility parsing
+            if ";" in api_key_clean:
+                parts = api_key_clean.split(";")
+                for part in parts:
+                    if "=" in part:
+                        k, v = part.split("=", 2)
+                        k_clean = k.strip().lower()
+                        v_clean = v.strip()
+                        if k_clean in ["apikey", "key"]:
+                            azure_key = v_clean
+                        elif k_clean in ["endpoint", "url"]:
+                            final_endpoint = v_clean
+                        elif k_clean in ["apiversion", "version"]:
+                            final_api_version = v_clean
+
+            # Automatically extract Windows system proxy registry configurations to bypass corporate firewalls!
+            proxies = urllib.request.getproxies()
+            http_client = httpx.Client(proxies=proxies) if proxies else None
+
+            client = openai.AzureOpenAI(
+                api_key=azure_key,
+                azure_endpoint=final_endpoint,
+                api_version=final_api_version,
+                http_client=http_client
+            )
+            model_name = model if model else "gpt-4o-mini"
+            response = client.chat.completions.create(
+                model=model_name, # Maps to Azure deployment name!
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.2
+            )
+            return response.choices[0].message.content
+
+        elif provider == "groq":
+            # Groq is 100% compatible with OpenAI SDK via base_url overrides!
+            client = openai.OpenAI(
+                api_key=api_key,
+                base_url="https://api.groq.com/openai/v1"
+            )
+            model_name = model if model else "llama-3.3-70b-versatile"
+            response = client.chat.completions.create(
+                model=model_name,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.2
+            )
+            return response.choices[0].message.content
+
+        elif provider == "grok":
+            # xAI Grok is 100% compatible with OpenAI SDK via base_url overrides!
+            client = openai.OpenAI(
+                api_key=api_key,
+                base_url="https://api.x.ai/v1"
+            )
+            model_name = model if model else "grok-2-1212"
+            response = client.chat.completions.create(
+                model=model_name,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.2
+            )
+            return response.choices[0].message.content
+
+        elif provider == "openrouter":
+            # OpenRouter is 100% compatible with OpenAI SDK via base_url overrides!
+            client = openai.OpenAI(
+                api_key=api_key,
+                base_url="https://openrouter.ai/api/v1",
+                default_headers={
+                    "HTTP-Referer": "https://qa-ai-platform.local",
+                    "X-Title": "QA.AI Platform"
+                }
+            )
+            model_name = model if model else "meta-llama/llama-3.3-70b-instruct"
+            response = client.chat.completions.create(
+                model=model_name,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.2
+            )
+            return response.choices[0].message.content
+
         elif provider == "anthropic":
             client = anthropic.AsyncAnthropic(api_key=api_key)
             model_name = model if model else "claude-3-5-sonnet-20241022"
@@ -63,7 +160,15 @@ class LLMAdapter:
             raise ValueError(f"Unsupported LLM provider: {provider}")
 
     @staticmethod
-    async def analyze_image(provider: str, model: str, api_key: str, prompt: str, image_bytes: bytes) -> str:
+    async def analyze_image(
+        provider: str, 
+        model: str, 
+        api_key: str, 
+        prompt: str, 
+        image_bytes: bytes,
+        azure_endpoint: str = None,
+        azure_api_version: str = None
+    ) -> str:
         """Helper to dynamically invoke the correct LLM library for multi-modal Vision queries."""
         provider = provider.lower().strip()
         
@@ -97,6 +202,147 @@ class LLMAdapter:
             # Encode image to Base64 data url
             base64_image = base64.b64encode(image_bytes).decode("utf-8")
             response = await client.chat.completions.create(
+                model=model_name,
+                messages=[
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": prompt},
+                            {
+                                "type": "image_url",
+                                "image_url": {
+                                    "url": f"data:image/jpeg;base64,{base64_image}"
+                                }
+                            }
+                        ]
+                    }
+                ],
+                temperature=0.2
+            )
+            return response.choices[0].message.content
+
+        elif provider == "azure":
+            # Support Azure OpenAI Vision natively using synchronous client and Windows registry proxy loader!
+            api_key_clean = api_key.strip()
+            azure_key = api_key_clean
+            
+            final_endpoint = azure_endpoint if azure_endpoint else os.environ.get("AZURE_OPENAI_ENDPOINT", "")
+            final_api_version = azure_api_version if azure_api_version else os.environ.get("AZURE_OPENAI_API_VERSION", "2023-05-15")
+
+            if ";" in api_key_clean:
+                parts = api_key_clean.split(";")
+                for part in parts:
+                    if "=" in part:
+                        k, v = part.split("=", 2)
+                        k_clean = k.strip().lower()
+                        v_clean = v.strip()
+                        if k_clean in ["apikey", "key"]:
+                            azure_key = v_clean
+                        elif k_clean in ["endpoint", "url"]:
+                            final_endpoint = v_clean
+                        elif k_clean in ["apiversion", "version"]:
+                            final_api_version = v_clean
+
+            # Automatically extract Windows system proxy registry configurations to bypass corporate firewalls!
+            proxies = urllib.request.getproxies()
+            http_client = httpx.Client(proxies=proxies) if proxies else None
+
+            client = openai.AzureOpenAI(
+                api_key=azure_key,
+                azure_endpoint=final_endpoint,
+                api_version=final_api_version,
+                http_client=http_client
+            )
+            model_name = model if model else "gpt-4o"
+            
+            # Encode image to Base64
+            base64_image = base64.b64encode(image_bytes).decode("utf-8")
+            response = client.chat.completions.create(
+                model=model_name, # Maps to Azure vision deployment name!
+                messages=[
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": prompt},
+                            {
+                                "type": "image_url",
+                                "image_url": {
+                                    "url": f"data:image/jpeg;base64,{base64_image}"
+                                }
+                            }
+                        ]
+                    }
+                ],
+                temperature=0.2
+            )
+            return response.choices[0].message.content
+
+        elif provider == "groq":
+            client = openai.OpenAI(
+                api_key=api_key,
+                base_url="https://api.groq.com/openai/v1"
+            )
+            model_name = model if model else "llama-3.2-11b-vision-preview"
+            base64_image = base64.b64encode(image_bytes).decode("utf-8")
+            response = client.chat.completions.create(
+                model=model_name,
+                messages=[
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": prompt},
+                            {
+                                "type": "image_url",
+                                "image_url": {
+                                    "url": f"data:image/jpeg;base64,{base64_image}"
+                                }
+                            }
+                        ]
+                    }
+                ],
+                temperature=0.2
+            )
+            return response.choices[0].message.content
+
+        elif provider == "grok":
+            client = openai.OpenAI(
+                api_key=api_key,
+                base_url="https://api.x.ai/v1"
+            )
+            model_name = model if model else "grok-2-vision-1212"
+            base64_image = base64.b64encode(image_bytes).decode("utf-8")
+            response = client.chat.completions.create(
+                model=model_name,
+                messages=[
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": prompt},
+                            {
+                                "type": "image_url",
+                                "image_url": {
+                                    "url": f"data:image/jpeg;base64,{base64_image}"
+                                }
+                            }
+                        ]
+                    }
+                ],
+                temperature=0.2
+            )
+            return response.choices[0].message.content
+
+        elif provider == "openrouter":
+            client = openai.OpenAI(
+                api_key=api_key,
+                base_url="https://openrouter.ai/api/v1",
+                default_headers={
+                    "HTTP-Referer": "https://qa-ai-platform.local",
+                    "X-Title": "QA.AI Platform"
+                }
+            )
+            model_name = model if model else "google/gemini-2.5-flash"
+            base64_image = base64.b64encode(image_bytes).decode("utf-8")
+            response = client.chat.completions.create(
                 model=model_name,
                 messages=[
                     {

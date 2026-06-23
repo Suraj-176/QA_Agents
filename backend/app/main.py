@@ -58,6 +58,69 @@ async def root():
         ]
     }
 
+
+from pydantic import BaseModel
+from fastapi import HTTPException
+from typing import Optional
+
+class TestConnectionRequest(BaseModel):
+    provider: str
+    model: str
+    api_key: str
+    azure_endpoint: Optional[str] = None
+    azure_api_version: Optional[str] = None
+
+@app.post("/api/settings/test-connection")
+async def test_llm_connection(payload: TestConnectionRequest):
+    """
+    Validates that the provided LLM credentials, model name, and provider are correct
+    by executing a lightweight, non-destructive API ping in the background.
+    """
+    from app.services.llm_adapter import LLMAdapter
+    from app.routes.automation import write_to_platform_txt_log
+    try:
+        # Log connection test attempt
+        write_to_platform_txt_log(
+            message=f"LLM Connection Test initiated. Provider: {payload.provider.upper()}, Model: '{payload.model}', Endpoint: '{payload.azure_endpoint or 'N/A'}'"
+        )
+
+        # A simple, ultra-fast, and cheap ping question
+        ping_prompt = "Respond with exactly the single word: OK"
+        response = await LLMAdapter.generate_text(
+            provider=payload.provider,
+            model=payload.model,
+            api_key=payload.api_key,
+            prompt=ping_prompt,
+            azure_endpoint=payload.azure_endpoint,
+            azure_api_version=payload.azure_api_version
+        )
+        if "OK" in response.upper() or len(response) > 0:
+            write_to_platform_txt_log(
+                message=f"LLM Connection Test SUCCESS. Connected to {payload.provider.upper()}!"
+            )
+            return {
+                "status": "success",
+                "message": f"Successfully connected to {payload.provider.upper()}! Credentials and model '{payload.model}' are validated."
+            }
+        else:
+            raise ValueError(f"Provider did not respond with expected ping token. Raw Response: {response}")
+    except Exception as e:
+        import traceback
+        tb_str = traceback.format_exc()
+        print(tb_str)
+        
+        # Write exact traceback to our persistent logs/platform_logs.txt!
+        write_to_platform_txt_log(
+            message=f"LLM Connection Test FAILED for {payload.provider.upper()}: {str(e)}",
+            error_traceback=tb_str
+        )
+        
+        raise HTTPException(
+            status_code=400,
+            detail=f"Connection test failed for {payload.provider.upper()}: {str(e)}"
+        )
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("app.main:app", host="127.0.0.1", port=5000, reload=True)
