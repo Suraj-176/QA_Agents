@@ -610,10 +610,12 @@ function Settings() {
               onChange={(e) => setSelectedPromptFile(e.target.value)}
               className="bg-slate-100 dark:bg-gray-950 border border-slate-200 dark:border-gray-800 rounded-lg px-3 py-1.5 text-xs font-bold text-indigo-500 dark:text-indigo-400 focus:outline-none focus:border-indigo-500 cursor-pointer transition-colors"
             >
-              <option value="CombinedPrompt.txt">CombinedPrompt.txt</option>
-              <option value="UIPrompt.txt">UIPrompt.txt</option>
-              <option value="FunctionalPrompt.txt">FunctionalPrompt.txt</option>
-              <option value="BugReportPrompt.txt">BugReportPrompt.txt</option>
+              <option value="CombinedPrompt.txt">CombinedPrompt.txt (TestCase Generator)</option>
+              <option value="UIPrompt.txt">UIPrompt.txt (UI Tests)</option>
+              <option value="FunctionalPrompt.txt">FunctionalPrompt.txt (Functional Tests)</option>
+              <option value="BugReportPrompt.txt">BugReportPrompt.txt (Visual Bug Analyzer)</option>
+              <option value="AutomationBootstrap.txt">AutomationBootstrap.txt (SDET Scaffolder)</option>
+              <option value="AutomationFileGen.txt">AutomationFileGen.txt (SDET File Generator)</option>
             </select>
           </div>
         </div>

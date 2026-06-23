@@ -161,7 +161,8 @@ async def get_prompts_file(file: str = "CombinedPrompt.txt"):
     Reads the raw prompt text configuration file from prompts/ folder on disk and returns it.
     """
     # Strict path-traversal safety check
-    if file not in ["UIPrompt.txt", "FunctionalPrompt.txt", "CombinedPrompt.txt", "BugReportPrompt.txt"]:
+    allowed_files = ["UIPrompt.txt", "FunctionalPrompt.txt", "CombinedPrompt.txt", "BugReportPrompt.txt", "AutomationBootstrap.txt", "AutomationFileGen.txt"]
+    if file not in allowed_files:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid prompt file requested."
@@ -198,7 +199,8 @@ async def save_prompts_file(
     Writes edited text configurations back to the corresponding prompt file on disk dynamically.
     """
     # Strict path-traversal safety check
-    if file not in ["UIPrompt.txt", "FunctionalPrompt.txt", "CombinedPrompt.txt", "BugReportPrompt.txt"]:
+    allowed_files = ["UIPrompt.txt", "FunctionalPrompt.txt", "CombinedPrompt.txt", "BugReportPrompt.txt", "AutomationBootstrap.txt", "AutomationFileGen.txt"]
+    if file not in allowed_files:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid prompt file specified."

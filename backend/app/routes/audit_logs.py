@@ -35,13 +35,18 @@ def log_audit(db: Session, action: str, details: str):
     """
     Globally available thread-safe logger helper to register visual and logical 
     platform operations inside our relational SQLite storage.
+    Spawns a private, isolated database session strictly to prevent SQLAlchemy transaction leaks.
     """
+    from app.database import SessionLocal
+    private_db = SessionLocal()
     try:
         log_entry = AuditLog(action=action, details=details)
-        db.add(log_entry)
-        db.commit()
+        private_db.add(log_entry)
+        private_db.commit()
     except Exception as e:
         print(f"Failed to record system audit log: {e}")
+    finally:
+        private_db.close()
 
 
 # =====================================================================

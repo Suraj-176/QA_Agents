@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import axios from 'axios'
-import { Eye, ClipboardList, Bug, CheckCircle2, ChevronRight, Activity } from 'lucide-react'
+import { Eye, ClipboardList, Bug, Code2, CheckCircle2, ChevronRight, Activity } from 'lucide-react'
 
 const API_BASE_URL = 'http://127.0.0.1:5000/api'
 
@@ -40,7 +40,7 @@ function Dashboard({ setActiveTab }) {
   return (
     <div className="space-y-10 animate-fadeIn">
       {/* Metrics Cards Grid */}
-      <div className="grid grid-cols-4 gap-6">
+      <div className="grid grid-cols-4 gap-6 select-none">
         <div className="bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-800 p-6 rounded-2xl flex items-center justify-between shadow-sm transition-all">
           <div className="space-y-1">
             <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-gray-500">Established Baselines</p>
@@ -83,18 +83,18 @@ function Dashboard({ setActiveTab }) {
       </div>
 
       {/* Quick Launch & Active Status sections */}
-      <div className="grid grid-cols-3 gap-8">
+      <div className="grid grid-cols-12 gap-8 select-none">
         {/* Core Quick launcher panel */}
-        <div className="col-span-2 bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-800 rounded-2xl p-8 space-y-6 transition-all">
+        <div className="col-span-9 bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-800 rounded-2xl p-8 space-y-6 transition-all">
           <h3 className="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2.5">
             <Activity size={18} className="text-indigo-500 dark:text-indigo-400 animate-pulse" />
             <span>⚡ Core Agent Quick Launch</span>
           </h3>
           
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-4 gap-4">
             <button
               onClick={() => setActiveTab('regression')}
-              className="bg-slate-50 dark:bg-gray-950 border border-slate-200 dark:border-gray-800/80 hover:border-indigo-500/30 dark:hover:border-indigo-500/30 p-6 rounded-2xl text-left space-y-4 transition-all duration-200 group active:scale-[0.98]"
+              className="bg-slate-50 dark:bg-gray-950 border border-slate-200 dark:border-gray-800/80 hover:border-indigo-500/30 dark:hover:border-indigo-500/30 p-5 rounded-2xl text-left space-y-4 transition-all duration-200 group active:scale-[0.98]"
             >
               <div className="w-10 h-10 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-xl flex items-center justify-center group-hover:bg-indigo-600 group-hover:text-white transition-all">
                 <Eye size={18} />
@@ -110,14 +110,14 @@ function Dashboard({ setActiveTab }) {
 
             <button
               onClick={() => setActiveTab('testcases')}
-              className="bg-slate-50 dark:bg-gray-950 border border-slate-200 dark:border-gray-800/80 hover:border-violet-500/30 dark:hover:border-violet-500/30 p-6 rounded-2xl text-left space-y-4 transition-all duration-200 group active:scale-[0.98]"
+              className="bg-slate-50 dark:bg-gray-950 border border-slate-200 dark:border-gray-800/80 hover:border-violet-500/30 dark:hover:border-violet-500/30 p-5 rounded-2xl text-left space-y-4 transition-all duration-200 group active:scale-[0.98]"
             >
               <div className="w-10 h-10 bg-violet-500/10 text-violet-600 dark:text-violet-400 rounded-xl flex items-center justify-center group-hover:bg-violet-600 group-hover:text-white transition-all">
                 <ClipboardList size={18} />
               </div>
               <div>
                 <h4 className="font-bold text-sm text-slate-800 dark:text-gray-100 flex items-center gap-1 group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors">
-                  <span>Requirements parser</span>
+                  <span>TestCase Builder</span>
                   <ChevronRight size={14} className="opacity-0 group-hover:opacity-100 transition-all" />
                 </h4>
                 <p className="text-xs text-slate-500 dark:text-gray-400 mt-1 leading-relaxed">Pipes raw user stories or markdown requirements to write structured test cases.</p>
@@ -126,7 +126,7 @@ function Dashboard({ setActiveTab }) {
 
             <button
               onClick={() => setActiveTab('bugreporter')}
-              className="bg-slate-50 dark:bg-gray-950 border border-slate-200 dark:border-gray-800/80 hover:border-amber-500/30 dark:hover:border-amber-500/30 p-6 rounded-2xl text-left space-y-4 transition-all duration-200 group active:scale-[0.98]"
+              className="bg-slate-50 dark:bg-gray-950 border border-slate-200 dark:border-gray-800/80 hover:border-amber-500/30 dark:hover:border-amber-500/30 p-5 rounded-2xl text-left space-y-4 transition-all duration-200 group active:scale-[0.98]"
             >
               <div className="w-10 h-10 bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-xl flex items-center justify-center group-hover:bg-amber-600 group-hover:text-white transition-all">
                 <Bug size={18} />
@@ -139,11 +139,27 @@ function Dashboard({ setActiveTab }) {
                 <p className="text-xs text-slate-500 dark:text-gray-400 mt-1 leading-relaxed">Direct screenshot upload and LLM Vision alignment audit.</p>
               </div>
             </button>
+
+            <button
+              onClick={() => setActiveTab('automation')}
+              className="bg-slate-50 dark:bg-gray-950 border border-slate-200 dark:border-gray-800/80 hover:border-indigo-500/30 dark:hover:border-indigo-500/30 p-5 rounded-2xl text-left space-y-4 transition-all duration-200 group active:scale-[0.98]"
+            >
+              <div className="w-10 h-10 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-xl flex items-center justify-center group-hover:bg-indigo-600 group-hover:text-white transition-all">
+                <Code2 size={18} />
+              </div>
+              <div>
+                <h4 className="font-bold text-sm text-slate-800 dark:text-gray-100 flex items-center gap-1 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                  <span>SDET Scaffolder</span>
+                  <ChevronRight size={14} className="opacity-0 group-hover:opacity-100 transition-all" />
+                </h4>
+                <p className="text-xs text-slate-500 dark:text-gray-400 mt-1 leading-relaxed">Scaffold BDD/Hybrid/Keyword-driven repositories or extend page objects.</p>
+              </div>
+            </button>
           </div>
         </div>
 
         {/* Environmental Platform Health Panel */}
-        <div className="bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-800 rounded-2xl p-8 space-y-6 transition-all">
+        <div className="col-span-3 bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-800 rounded-2xl p-8 space-y-6 transition-all">
           <h3 className="text-lg font-bold text-slate-800 dark:text-white">⚙️ System Topology</h3>
           <div className="space-y-4">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-gray-800/60 pb-3">
@@ -152,7 +168,7 @@ function Dashboard({ setActiveTab }) {
             </div>
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-gray-800/60 pb-3">
               <span className="text-sm text-slate-500 dark:text-gray-400">Database Engine</span>
-              <span className="text-sm font-semibold text-slate-700 dark:text-gray-200">SQLite 3 (Zero Setup)</span>
+              <span className="text-sm font-semibold text-slate-700 dark:text-gray-200">SQLite (Zero Setup)</span>
             </div>
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-gray-800/60 pb-3">
               <span className="text-sm text-slate-500 dark:text-gray-400">Browser Driver</span>

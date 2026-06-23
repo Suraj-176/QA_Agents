@@ -14,7 +14,27 @@ class LLMAdapter:
         if provider == "gemini":
             genai.configure(api_key=api_key)
             model_name = model if model else "gemini-1.5-flash"
-            model_instance = genai.GenerativeModel(model_name)
+            
+            # Configure safety settings to BLOCK_NONE to prevent false-positive blocks on mock test passwords
+            from google.generativeai.types import HarmCategory, HarmBlockThreshold
+            safety_settings = {
+                HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
+                HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
+                HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
+                HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
+            }
+            
+            # Unblock Gemini's full output token limits to prevent truncation on large 5-file scaffolds!
+            generation_config = {
+                "max_output_tokens": 8192,
+                "temperature": 0.2
+            }
+            
+            model_instance = genai.GenerativeModel(
+                model_name=model_name,
+                safety_settings=safety_settings,
+                generation_config=generation_config
+            )
             response = await model_instance.generate_content_async(prompt)
             return response.text
 
@@ -50,7 +70,20 @@ class LLMAdapter:
         if provider == "gemini":
             genai.configure(api_key=api_key)
             model_name = model if model else "gemini-1.5-flash"
-            model_instance = genai.GenerativeModel(model_name)
+            
+            # Configure safety settings to BLOCK_NONE to prevent false-positive blocks on UI screenshot analysis
+            from google.generativeai.types import HarmCategory, HarmBlockThreshold
+            safety_settings = {
+                HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
+                HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
+                HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
+                HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
+            }
+            
+            model_instance = genai.GenerativeModel(
+                model_name=model_name,
+                safety_settings=safety_settings
+            )
             
             # Convert bytes to PIL Image for Gemini SDK compatibility
             img = Image.open(BytesIO(image_bytes))
