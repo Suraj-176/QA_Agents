@@ -107,23 +107,37 @@ class BugReporterService:
         # Build clean description incorporating reproducible steps
         steps_text = "\n".join([f"- {s}" for s in parsed_bug.get("steps_to_reproduce", [])])
         header_text = "Visual Bug Details" if has_image else "Bug Details"
+        # Build clean description incorporating reproducible steps and dynamic selectors!
+        steps_text = "\n".join([f"- {s}" for s in parsed_bug.get("steps_to_reproduce", [])])
+        header_text = "Visual Bug Details" if has_image else "Bug Details"
+        
         full_description = (
             f"h3. {header_text}\n{parsed_bug.get('description', '')}\n\n"
             f"h3. Steps to Reproduce\n{steps_text}\n\n"
-            f"h3. Expected Result\n{parsed_bug.get('expected_result', '')}"
+            f"h3. Expected Result\n{parsed_bug.get('expected_result', '')}\n\n"
+            f"h3. Suggested Selectors / Elements\n{parsed_bug.get('suggested_selectors', 'Not specified')}"
         )
 
-        # 4. Save BugReport in SQLite database
-        bug_report = BugReport(
-            title=parsed_bug.get("title") or (f"Visual Bug {timestamp}" if has_image else f"Functional Bug {timestamp}"),
-            description=full_description,
-            severity=parsed_bug.get("severity") or "Medium",
-            screenshot_path=relative_screenshot_path,
-            ai_analysis=raw_analysis,
-            status="draft"
-        )
-        db.add(bug_report)
-        db.commit()
+        # 4. Save BugReport in SQLite database with a strict transactional cleanup guard!
+        try:
+            bug_report = BugReport(
+                title=parsed_bug.get("title") or (f"Visual Bug {timestamp}" if has_image else f"Functional Bug {timestamp}"),
+                description=full_description,
+                severity=parsed_bug.get("severity") or "Medium",
+                screenshot_path=relative_screenshot_path,
+                ai_analysis=raw_analysis,
+                status="draft"
+            )
+            db.add(bug_report)
+            db.commit()
+        except Exception as db_err:
+            # Prevent file leakage: Delete screenshot from disk if SQL transaction fails!
+            if has_image and screenshot_filepath and os.path.exists(screenshot_filepath):
+                try:
+                    os.remove(screenshot_filepath)
+                except Exception:
+                    pass
+            raise RuntimeError(f"Failed to register bug report in database: {str(db_err)}")
 
         # Write to audit logs
         try:
@@ -150,7 +164,11 @@ class BugReporterService:
         jira_project: str, 
         db: Session
     ) -> dict:
-        """Publishes the BugReport to JIRA Cloud REST APIs, uploading screenshot as direct attachment."""
+        """
+        Publishes the BugReport to JIRA Cloud REST APIs, uploading screenshot as direct attachment.
+        Uses standard JIRA REST API v2 to accept description as direct, multi-line formatted markdown string,
+        preventing any text squashing or layout loss!
+        """
         # Sanitize credentials (strip potential copy-paste whitespace)
         jira_domain = jira_domain.strip() if jira_domain else ""
         jira_email = jira_email.strip() if jira_email else ""
@@ -178,23 +196,14 @@ class BugReporterService:
             "fields": {
                 "project": {"key": jira_project.upper().strip()},
                 "summary": bug.title,
-                "description": {
-                    "type": "doc",
-                    "version": 1,
-                    "content": [
-                        {
-                            "type": "paragraph",
-                            "content": [{"type": "text", "text": formatted_description.replace("h3. ", "").replace("\n", " ")}]
-                        }
-                    ]
-                },
+                "description": formatted_description,  # Multi-line text string with headings/bullets preserved 100%!
                 "issuetype": {"name": "Bug"},
                 "priority": {"name": jira_priority}
             }
         }
 
         jira_domain_clean = jira_domain.replace(".atlassian.net", "").strip()
-        create_issue_url = f"https://{jira_domain_clean}.atlassian.net/rest/api/3/issue"
+        create_issue_url = f"https://{jira_domain_clean}.atlassian.net/rest/api/2/issue"
 
         response = requests.post(create_issue_url, json=issue_payload, headers=headers)
         if response.status_code not in [200, 201]:

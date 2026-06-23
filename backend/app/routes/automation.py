@@ -9,6 +9,45 @@ router = APIRouter(prefix="/api/automation", tags=["Automation Architect"])
 automation_service = AutomationAgentService()
 
 # =====================================================================
+# PERSISTENT LOCAL TXT LOGGING HELPER
+# =====================================================================
+
+def write_to_platform_txt_log(message: str, error_traceback: str = None, raw_llm_response: str = None):
+    """
+    Saves traceable platform executions, detailed tracebacks, and raw LLM responses
+    directly into a local persistent 'backend/logs/platform_logs.txt' file on disk.
+    """
+    import os
+    from datetime import datetime
+    
+    try:
+        # Configure absolute path to backend/logs/platform_logs.txt
+        base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        logs_dir = os.path.join(base_dir, "logs")
+        os.makedirs(logs_dir, exist_ok=True)
+        
+        log_file_path = os.path.join(logs_dir, "platform_logs.txt")
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        
+        with open(log_file_path, "a", encoding="utf-8") as f:
+            f.write(f"\n====================================================================\n")
+            f.write(f"⏰ TIMESTAMP: {timestamp}\n")
+            f.write(f"📝 MESSAGE: {message}\n")
+            
+            if error_traceback:
+                f.write(f"--------------------------------------------------------------------\n")
+                f.write(f"🚨 EXCEPTION TRACEBACK:\n{error_traceback}\n")
+                
+            if raw_llm_response:
+                f.write(f"--------------------------------------------------------------------\n")
+                f.write(f"🔮 RAW LLM RESPONSE:\n{raw_llm_response}\n")
+                
+            f.write(f"====================================================================\n")
+    except Exception as e:
+        print(f"Failed to write to persistent log file: {e}")
+
+
+# =====================================================================
 # PYDANTIC SCHEMAS
 # =====================================================================
 
@@ -20,8 +59,8 @@ class BootstrapRequest(BaseModel):
 
     @validator('tool')
     def validate_tool(cls, v):
-        if v not in ["Playwright", "Selenium"]:
-            raise ValueError("Supported tools are strictly 'Playwright' or 'Selenium'.")
+        if v not in ["Playwright", "Selenium", "Cypress"]:
+            raise ValueError("Supported tools are strictly 'Playwright', 'Selenium', or 'Cypress'.")
         return v
 
     @validator('language')
@@ -96,6 +135,11 @@ async def bootstrap_framework(
         )
 
     try:
+        # Log scaffolding initiation in our local persistent log file
+        write_to_platform_txt_log(
+            message=f"Initiated framework scaffolding. Tool: {payload.tool}, Language: {payload.language}, Pattern: {payload.pattern}, Destination: {payload.output_folder or 'ZIP-Only'}"
+        )
+
         result = await automation_service.bootstrap_framework(
             tool=payload.tool,
             language=payload.language,
@@ -109,7 +153,15 @@ async def bootstrap_framework(
         return result
     except Exception as err:
         import traceback
-        traceback.print_exc()  # Prints the complete python traceback to Uvicorn terminal logs!
+        tb_str = traceback.format_exc()
+        print(tb_str)  # Print to terminal console
+        
+        # Write exact traceback to our persistent logs/platform_logs.txt!
+        write_to_platform_txt_log(
+            message=f"Automation bootstrapping failed: {str(err)}",
+            error_traceback=tb_str
+        )
+        
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Automation bootstrapping failed: {str(err)}"
@@ -135,6 +187,11 @@ async def generate_framework_file(
         )
 
     try:
+        # Log generation initiation in our local persistent log file
+        write_to_platform_txt_log(
+            message=f"Initiated file generation extender. Folder: {payload.folder_path}, Instruction: '{payload.instruction}'"
+        )
+
         result = await automation_service.generate_framework_file(
             folder_path=payload.folder_path,
             user_instruction=payload.instruction,
@@ -145,6 +202,24 @@ async def generate_framework_file(
         )
         return result
     except Exception as err:
+        import traceback
+        tb_str = traceback.format_exc()
+        print(tb_str)  # Print to terminal console
+        
+        # Capture raw LLM output if present inside exception message
+        raw_resp = None
+        if "Raw Response:" in str(err):
+            parts = str(err).split("Raw Response:\n")
+            if len(parts) > 1:
+                raw_resp = parts[1]
+        
+        # Write exact traceback and raw LLM response to our persistent logs/platform_logs.txt!
+        write_to_platform_txt_log(
+            message=f"Code generation failed: {str(err)}",
+            error_traceback=tb_str,
+            raw_llm_response=raw_resp
+        )
+        
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Code generation failed: {str(err)}"
@@ -157,6 +232,11 @@ async def write_file_to_framework(payload: WriteFileRequest, db: Session = Depen
     Saves a generated code block directly as a physical file onto your local framework directory.
     """
     try:
+        # Log write initiation in our local persistent log file
+        write_to_platform_txt_log(
+            message=f"Initiated file write operation. Folder: {payload.folder_path}, Destination Path: '{payload.relative_path}'"
+        )
+
         result = automation_service.write_file_to_framework(
             folder_path=payload.folder_path,
             relative_path=payload.relative_path,
@@ -165,6 +245,16 @@ async def write_file_to_framework(payload: WriteFileRequest, db: Session = Depen
         )
         return result
     except Exception as err:
+        import traceback
+        tb_str = traceback.format_exc()
+        print(tb_str)  # Print to terminal console
+        
+        # Write exact traceback to our persistent logs/platform_logs.txt!
+        write_to_platform_txt_log(
+            message=f"Failed to write file to framework: {str(err)}",
+            error_traceback=tb_str
+        )
+        
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to write file to framework: {str(err)}"

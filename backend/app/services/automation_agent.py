@@ -17,6 +17,17 @@ class AutomationAgentService:
         os.makedirs(os.path.join(self.static_dir, "bootstraps"), exist_ok=True)
         self.root_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+    def _load_prompt_template(self, filename: str) -> str:
+        """Loads prompt file from prompts directory dynamically."""
+        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        filepath = os.path.join(base_dir, "prompts", filename)
+        try:
+            with open(filepath, "r", encoding="utf-8") as f:
+                return f.read().strip()
+        except Exception:
+            pass
+        return ""
+
     def _extract_blocks(self, raw_text: str) -> list:
         """Parses raw text and extracts all === START_FILE ... === END_FILE === blocks."""
         blocks = re.findall(r"===\s*START_FILE:\s*([^\s]+?)\s*===([\s\S]+?)===\s*END_FILE\s*===", raw_text)
@@ -28,6 +39,78 @@ class AutomationAgentService:
                     "content": content_str.strip()
                 })
         return files_list
+
+    def _clean_json_response(self, raw_text: str) -> str:
+        """Safely extracts JSON from markdown-wrapped blockquotes if present anywhere in the text."""
+        raw_text = raw_text.strip()
+        match = re.search(r"```(?:json)?\s*([\s\S]+?)\s*```", raw_text)
+        if match:
+            return match.group(1).strip()
+        return raw_text
+
+    def scan_local_framework(self, folder_path: str) -> tuple:
+        """
+        Scans a local directory structure up to 4 levels deep (ignoring heavy, un-needed folders),
+        and reads key configuration file contents to learn their coding style and conventions.
+        Returns: (structure_tree_text, key_configs_text)
+        """
+        if not os.path.exists(folder_path):
+            raise ValueError(f"Directory path does not exist on disk: {folder_path}")
+
+        ignored_folders = {
+            "node_modules", ".git", ".venv", "venv", "env", "target", "bin", 
+            "build", ".idea", ".vscode", "dist", ".next", ".pytest_cache", "__pycache__"
+        }
+        
+        ignored_extensions = {
+            ".png", ".jpg", ".jpeg", ".gif", ".ico", ".pdf", ".zip", ".tar", 
+            ".gz", ".xlsx", ".csv", ".class", ".jar", ".war"
+        }
+
+        structure_lines = []
+        configs_data = []
+
+        # 1. Crawl directory structure
+        for root, dirs, files in os.walk(folder_path):
+            # Prune ignored folders in-place to prevent recursive traversal
+            dirs[:] = [d for d in dirs if d not in ignored_folders]
+            
+            depth = root[len(folder_path):].count(os.sep)
+            if depth >= 4:
+                continue # Limit depth to prevent token bloat
+                
+            indent = "  " * depth
+            folder_name = os.path.basename(root) or folder_path
+            structure_lines.append(f"{indent}📁 {folder_name}/")
+            
+            for file in files:
+                ext = os.path.splitext(file)[1].lower()
+                if ext in ignored_extensions:
+                    continue
+                structure_lines.append(f"{indent}  📄 {file}")
+                
+                # 2. Extract key config file contents (limit to 120 lines each to prevent token bloat!)
+                is_config = file.lower() in [
+                    "package.json", "playwright.config.ts", "playwright.config.js", 
+                    "wdio.conf.js", "pom.xml", "requirements.txt", "conftest.py", 
+                    "testng.xml", "basepage.js", "basepage.ts", "basetest.java"
+                ] or file.endswith("basepage.py")
+                
+                if is_config:
+                    filepath = os.path.join(root, file)
+                    try:
+                        with open(filepath, "r", encoding="utf-8") as f:
+                            lines = f.readlines()
+                            content = "".join(lines[:120])
+                            if len(lines) > 120:
+                                content += "\n... [truncated due to token size optimization] ..."
+                            configs_data.append(f"📄 File: {file} (Path: {os.path.relpath(filepath, folder_path)})\n```\n{content}\n```")
+                    except Exception:
+                        pass
+
+        structure_tree = "\n".join(structure_lines)
+        configs_text = "\n\n".join(configs_data) if configs_data else "(No key configuration files found)"
+        return structure_tree, configs_text
 
     async def bootstrap_framework(
         self, 
@@ -67,51 +150,18 @@ class AutomationAgentService:
             lang_ext = "js"
 
         # ---------------------------------------------------------
-        # PHASE 1: FOUNDATIONS MEGA-PROMPT
+        # PHASE 1: FOUNDATIONS MEGA-PROMPT (DYNAMICALLY LOADED!)
         # ---------------------------------------------------------
-        prompt_phase_1 = f"""Act as a Principal Test Automation Architect with 15+ years of experience building enterprise-grade, highly secure, and zero-flakiness testing infrastructures for global banking platforms.
-
-Your objective is to architect and generate the core files for a new, state-of-the-art Web and API Test Automation Framework from scratch.
-
-### 🛠️ TECH STACK:
-- Engine: {tool} ({language})
-- Architecture Pattern: {pattern}
-- Reporting: Allure Reports
-- CI/CD: GitHub Actions
-
-### 🏗️ STRICT ARCHITECTURAL MANDATES:
-1. Split-Horizon Architecture: Strict folder segregation between UI and API tests.
-2. Fluent Page Object Model: All page objects must extend BasePage, return this for method chaining, and use robust stable locators.
-3. Zero Raw Assertions Policy: Step definitions must NEVER contain raw expect() statements. All assertions must be delegated to specialized Validator classes.
-4. Step Traceability: Every step definition and Validator method must be wrapped in allure.step() for granular reporting.
-
-### 🛡️ ENTERPRISE CORE ENGINES (Must address standard loopholes):
-- BasePage (Anti-Flakiness): Must include exponential backoff for navigation, wait-for-visible wrappers, and robust click/fill abstractions.
-- Secure Logger: A Singleton logger that automatically masks/redacts sensitive data (passwords, tokens, PANs, credit cards) before printing.
-- APIClient: Secure REST wrapper methods.
-
---- ⚠️ EXTREMELY STRICT OUTPUT FORMAT MANDATE ⚠️ ---
-You MUST output all generated files in the following parsable block-based format exactly. Do not use JSON strings or markdown wrappers around the entire response. Write each file's complete path and code content using these delimiters:
-
-=== START_FILE: path/to/file.ext ===
-[Raw, complete, and production-ready source code here]
-=== END_FILE ===
-
-You are STRICTLY FORBIDDEN from using placeholder comments like "// implement here" or "... rest of code". Every file must be fully written and syntactically correct in its raw, unescaped form.
-
-### 📝 YOUR DELIVERABLES FOR PHASE 1:
-Output the complete, production-ready code for the following foundational files:
-1. package.json (or requirements.txt / pom.xml depending on language)
-2. playwright.config.ts / config files
-3. core/logger/Logger.{lang_ext}
-4. core/api/APIClient.{lang_ext}
-5. core/base/BasePage.{lang_ext}
-6. .github/workflows/{tool.lower()}.yml
-7. README.md
-
-Use extremely clean code, elegant comments, and professional error handling.
-"""
-        print("Executing Phase 1: Generating Foundations...")
+        tool_clean = tool.strip().capitalize()
+        if tool_clean not in ["Playwright", "Selenium", "Cypress"]:
+            tool_clean = "Playwright"  # Safe default fallback
+            
+        prompt_filename = f"{tool_clean}Bootstrap.txt"
+        template = self._load_prompt_template(prompt_filename)
+        
+        prompt_phase_1 = template.replace("{language}", language).replace("{pattern}", pattern)
+        
+        print(f"Executing Phase 1: Generating Foundations using {prompt_filename}...")
         res_phase_1 = await LLMAdapter.generate_text(provider, model, api_key, prompt_phase_1)
         files_1 = self._extract_blocks(res_phase_1)
         paths_1 = [f["path"] for f in files_1]
@@ -230,7 +280,98 @@ DO NOT re-output, repeat, or duplicate any of the previously generated files. Ge
             "message": f"Successfully completed the 3-step AI Sequential Generation Pipeline! {len(written_paths)} files generated completely. Click the button above to download your complete repository ZIP archive."
         }
 
-    async def generate_framework_file(self, folder_path: str, user_instruction: str, provider: str, model: str, api_key: str, db: Session) -> dict:
-        raise NotImplementedError("Extend framework prompt will be handled separately.")
+    async def generate_framework_file(
+        self, 
+        folder_path: str, 
+        user_instruction: str, 
+        provider: str, 
+        model: str, 
+        api_key: str, 
+        db: Session
+    ) -> dict:
+        """
+        Context-aware code file generator. Scans the local directory structures, loads
+        conventions, and generates new POM files or spec scripts matching their style exactly.
+        Natively supports generating multiple files simultaneously (e.g. features + steps + datasets)
+        using our un-escapable Gherkin block delimiters!
+        """
+        # 1. Scan existing local context on disk
+        structure_tree, configs_text = self.scan_local_framework(folder_path)
+
+        # 2. Formulate file-generation prompt
+        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        filepath = os.path.join(base_dir, "prompts", "AutomationFileGen.txt")
+        try:
+            with open(filepath, "r", encoding="utf-8") as f:
+                template = f.read().strip()
+        except Exception:
+            template = ""
+
+        prompt = template.replace("{framework_structure}", structure_tree)\
+                         .replace("{framework_configs}", configs_text)\
+                         .replace("{user_instruction}", user_instruction)
+
+        # 3. Call LLM Adapter dynamically
+        raw_output = await LLMAdapter.generate_text(
+            provider=provider,
+            model=model,
+            api_key=api_key,
+            prompt=prompt
+        )
+
+        raw_output = raw_output.strip()
+
+        # 4. Extract all files using our robust block parser!
+        files_list = self._extract_blocks(raw_output)
+        
+        if files_list:
+            # Symmetrical response wrapping
+            return {
+                "files_count": len(files_list),
+                "files": files_list
+            }
+        else:
+            # Fallback to standard JSON parser if the LLM returned JSON format
+            cleaned_json = self._clean_json_response(raw_output)
+            try:
+                parsed_data = json.loads(cleaned_json)
+                suggested_path = parsed_data.get("suggested_path") or "pages/MyNewPage.js"
+                code = parsed_data.get("code") or "// Generated Code"
+                return {
+                    "files_count": 1,
+                    "files": [{
+                        "path": suggested_path,
+                        "content": code
+                    }]
+                }
+            except Exception as e:
+                # Log full raw output to Uvicorn terminal for immediate diagnostics!
+                print("\n" + "="*80)
+                print("🚨 [CRITICAL EXTENDER ERROR] Failed to parse file generation response!")
+                print(f"Error details: {str(e)}")
+                print("-"*80)
+                print(f"RAW LLM RESPONSE RECEIVED:\n{raw_output}")
+                print("="*80 + "\n")
+                raise ValueError(f"LLM did not return a valid block-based file generation: {str(e)}\nRaw Response:\n{raw_output}")
+
     def write_file_to_framework(self, folder_path: str, relative_path: str, code: str, db: Session) -> dict:
-        raise NotImplementedError("Write file prompt will be handled separately.")
+        """Saves generated code blocks directly into files on local disk."""
+        clean_rel_path = os.path.normpath(relative_path).replace("..", "").lstrip("\\/")
+        full_path = os.path.join(folder_path, clean_rel_path)
+
+        os.makedirs(os.path.dirname(full_path), exist_ok=True)
+        with open(full_path, "w", encoding="utf-8") as f:
+            f.write(code)
+
+        log_audit(
+            db=db,
+            action="config",
+            details=f"Surgically added new file '{clean_rel_path}' directly to local framework folder: {folder_path}"
+        )
+
+        return {
+            "full_path": full_path,
+            "relative_path": clean_rel_path,
+            "status": "success",
+            "message": f"Successfully saved '{clean_rel_path}' into your framework!"
+        }

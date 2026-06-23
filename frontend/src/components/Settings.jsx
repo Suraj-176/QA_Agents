@@ -614,7 +614,9 @@ function Settings() {
               <option value="UIPrompt.txt">UIPrompt.txt (UI Tests)</option>
               <option value="FunctionalPrompt.txt">FunctionalPrompt.txt (Functional Tests)</option>
               <option value="BugReportPrompt.txt">BugReportPrompt.txt (Visual Bug Analyzer)</option>
-              <option value="AutomationBootstrap.txt">AutomationBootstrap.txt (SDET Scaffolder)</option>
+              <option value="PlaywrightBootstrap.txt">PlaywrightBootstrap.txt (Playwright Scaffolder)</option>
+              <option value="SeleniumBootstrap.txt">SeleniumBootstrap.txt (Selenium Scaffolder)</option>
+              <option value="CypressBootstrap.txt">CypressBootstrap.txt (Cypress Scaffolder)</option>
               <option value="AutomationFileGen.txt">AutomationFileGen.txt (SDET File Generator)</option>
             </select>
           </div>

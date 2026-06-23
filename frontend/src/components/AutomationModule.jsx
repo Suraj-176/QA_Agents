@@ -15,13 +15,14 @@ function AutomationModule() {
   const [bootTool, setBootTool] = useState('Playwright')
   const [bootLang, setBootLang] = useState('TypeScript')
   const [bootPattern, setBootPattern] = useState('BDD (Cucumber / Gherkin)')
-  const [bootFolder, setBootFolder] = useState('') // Default blank for optional pure ZIP downloads!
+  const [bootFolder, setBootFolder] = useState('C:\\QAAgents\\my_new_framework')
   const [bootResult, setBootResult] = useState(null)
 
   // Sub-Tab 2: Extend Form states
   const [extendFolder, setExtendFolder] = useState('C:\\QAAgents\\my_new_framework')
   const [instruction, setInstruction] = useState('')
   const [genResult, setGenResult] = useState(null)
+  const [selectedFileIdx, setSelectedExtFileIndex] = useState(0) // Added for multi-file extensions!
   const [writeResult, setWriteResult] = useState(null)
 
   // Get transient headers
@@ -138,6 +139,7 @@ function AutomationModule() {
       clearInterval(intervalId)
       setProgress(100)
       setProgressMessage('File code compiled successfully!')
+      setSelectedExtFileIndex(0) // Reset to first file index cleanly on fresh generations!
       setGenResult(response.data)
     } catch (err) {
       clearInterval(intervalId)
@@ -149,14 +151,17 @@ function AutomationModule() {
 
   const handleWriteFile = async () => {
     if (!genResult || !extendFolder) return
+    const activeFile = genResult.files[selectedFileIdx]
+    if (!activeFile) return
+    
     setLoading(true)
     setWriteResult(null)
 
     try {
       const response = await axios.post(`${API_BASE_URL}/automation/write`, {
         folder_path: extendFolder,
-        relative_path: genResult.suggested_path,
-        code: genResult.code
+        relative_path: activeFile.path,
+        code: activeFile.content
       })
       setWriteResult(response.data)
     } catch (err) {
@@ -206,7 +211,7 @@ function AutomationModule() {
             <div className="border-b border-gray-800 pb-3">
               <h3 className="font-bold text-white text-base">🏗️ Configure Scaffolder</h3>
               <p className="text-[10px] text-gray-500 mt-1 leading-normal">
-                Choose your tools. Provide a local directory path to scaffold on disk, or leave it blank to download as a structured ZIP!
+                Choose your environment. Provide a local directory path to scaffold on disk, or leave it blank to download as a structured ZIP!
               </p>
             </div>
             
@@ -222,6 +227,7 @@ function AutomationModule() {
                 >
                   <option value="Playwright">Playwright (Modern, Fast)</option>
                   <option value="Selenium">Selenium WebDriver (Classic, Enterprise)</option>
+                  <option value="Cypress">Cypress (Modern, Frontend)</option>
                 </select>
               </div>
 
@@ -462,6 +468,28 @@ function AutomationModule() {
               </div>
             ) : genResult ? (
               <div className="bg-gray-900 border border-gray-800 rounded-2xl p-8 space-y-6 animate-fadeIn">
+                
+                {/* Multi-File dropdown selector shown if files count > 1 */}
+                {genResult.files && genResult.files.length > 1 && (
+                  <div className="space-y-2 border-b border-gray-850 pb-4 animate-fadeIn">
+                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">📁 Select File to Preview</label>
+                    <select
+                      value={selectedFileIdx}
+                      onChange={(e) => {
+                        setSelectedExtFileIndex(parseInt(e.target.value, 10))
+                        setWriteResult(null) // Reset saved confirm banner on file switch
+                      }}
+                      className="w-full bg-gray-950 border border-gray-850 text-indigo-400 rounded-xl px-4 py-3 text-xs font-bold font-mono focus:outline-none focus:border-indigo-500 cursor-pointer"
+                    >
+                      {genResult.files.map((file, idx) => (
+                        <option key={idx} value={idx}>
+                          {idx + 1}. {file.path}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
                 <div className="border-b border-gray-800 pb-4 flex flex-wrap gap-4 items-center justify-between">
                   <div className="flex-1 min-w-[250px]">
                     <h3 className="font-bold text-white text-base flex items-center gap-2">
@@ -474,8 +502,12 @@ function AutomationModule() {
                       <span className="text-[10px] font-bold text-gray-500 uppercase shrink-0">Path:</span>
                       <input
                         type="text"
-                        value={genResult.suggested_path}
-                        onChange={(e) => setGenResult({ ...genResult, suggested_path: e.target.value })}
+                        value={genResult.files && genResult.files[selectedFileIdx] ? genResult.files[selectedFileIdx].path : ''}
+                        onChange={(e) => {
+                          const updatedFiles = [...genResult.files]
+                          updatedFiles[selectedFileIdx].path = e.target.value
+                          setGenResult({ ...genResult, files: updatedFiles })
+                        }}
                         className="bg-gray-950 border border-gray-850 px-2.5 py-1 text-[11px] font-bold font-mono text-indigo-400 rounded-lg focus:outline-none focus:border-indigo-500 flex-1"
                         required
                         title="Edit output destination file path if needed"
@@ -511,8 +543,12 @@ function AutomationModule() {
                 {/* Code viewport block */}
                 <div className="space-y-2">
                   <textarea
-                    value={genResult.code}
-                    onChange={(e) => setGenResult({ ...genResult, code: e.target.value })}
+                    value={genResult.files && genResult.files[selectedFileIdx] ? genResult.files[selectedFileIdx].content : ''}
+                    onChange={(e) => {
+                      const updatedFiles = [...genResult.files]
+                      updatedFiles[selectedFileIdx].content = e.target.value
+                      setGenResult({ ...genResult, files: updatedFiles })
+                    }}
                     rows={16}
                     className="w-full bg-gray-950 border border-gray-850 p-5 rounded-xl font-mono text-[11px] text-gray-300 focus:outline-none focus:border-indigo-500 leading-relaxed resize-y shadow-inner transition-all"
                     required

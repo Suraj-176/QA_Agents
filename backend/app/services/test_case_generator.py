@@ -18,6 +18,33 @@ class TestCaseGeneratorService:
         # If no markdown block, return raw text directly
         return raw_text
 
+    def _attempt_json_repair(self, broken_json: str) -> str:
+        """
+        Attempts to heuristically repair truncated or cut-off JSON arrays/objects
+        by auto-completing missing closing quotes, braces, and brackets on-the-fly.
+        """
+        broken_json = broken_json.strip()
+        
+        # Balance quotes if the JSON got cut off inside a string
+        if broken_json.count('"') % 2 != 0:
+            broken_json += '"'
+            
+        # Balance array and object symbols
+        open_braces = broken_json.count('{')
+        close_braces = broken_json.count('}')
+        open_brackets = broken_json.count('[')
+        close_brackets = broken_json.count(']')
+        
+        # If inside an object block, close it
+        if open_braces > close_braces:
+            broken_json += '}' * (open_braces - close_braces)
+            
+        # If inside an array block, close it
+        if open_brackets > close_brackets:
+            broken_json += ']' * (open_brackets - close_brackets)
+            
+        return broken_json
+
     def _load_prompt_by_type(self, mode: str) -> str:
         """
         Dynamically loads independent prompt text files from backend/app/prompts/ folder.
@@ -60,6 +87,7 @@ class TestCaseGeneratorService:
         """
         Loads the configured prompt from prompts folder based on mode, 
         pipes it to the LLM, and populates SQLite test suites and cases.
+        Integrates dynamic, failsafe JSON healing and regex block-rescue sweepers on trailing truncations!
         """
         # Load isolated prompt and inject requirements
         base_prompt_template = self._load_prompt_by_type(mode)
@@ -75,10 +103,38 @@ class TestCaseGeneratorService:
         
         # Extract and parse JSON
         cleaned_json = self._clean_json_response(raw_llm_output)
+        parsed_data = None
+        
         try:
             parsed_data = json.loads(cleaned_json)
-        except json.JSONDecodeError as e:
-            raise ValueError(f"LLM did not return a valid JSON payload: {str(e)}\nRaw Output: {raw_llm_output}")
+        except json.JSONDecodeError:
+            # 1. Attempt heuristic JSON repair on trailing truncations
+            repaired_json = self._attempt_json_repair(cleaned_json)
+            try:
+                parsed_data = json.loads(repaired_json)
+            except json.JSONDecodeError as e:
+                # 2. Trigger regex block rescue: extract any successfully-written individual test case objects!
+                print("JSON Parsing failed on primary and repaired attempts. Initiating regex rescue sweep...")
+                test_cases_list = []
+                
+                # Regex matches valid-looking JSON objects containing a "test_id"
+                matches = re.findall(r"\{\s*\"test_id\"[\s\S]+?\}", cleaned_json)
+                for block in matches:
+                    try:
+                        block_repaired = self._attempt_json_repair(block)
+                        tc_obj = json.loads(block_repaired)
+                        if tc_obj.get("test_id") or tc_obj.get("title"):
+                            test_cases_list.append(tc_obj)
+                    except Exception:
+                        pass
+                
+                if test_cases_list:
+                    parsed_data = {
+                        "title": title or f"Rescued {mode.upper()} Suite",
+                        "test_cases": test_cases_list
+                    }
+                else:
+                    raise ValueError(f"LLM did not return a valid JSON payload: {str(e)}\nRaw Output: {raw_llm_output}")
 
         # Ensure suite title has a fallback
         suite_title = parsed_data.get("title") or title or f"Generated {mode.upper()} Suite"

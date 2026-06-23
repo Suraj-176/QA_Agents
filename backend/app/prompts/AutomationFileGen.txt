@@ -10,18 +10,22 @@ Key Configuration Files (for learning conventions):
 {framework_configs}
 ---
 
-The user wants you to generate a new file with the following instructions:
+The user wants you to generate new framework files with the following instructions:
 👉 "{user_instruction}"
 
 Analyze their directory layout, config imports, ES Modules/CommonJS preferences, async patterns, and base class names (e.g. if they have a BasePage class they inherit from, or a specific selector syntax).
 
-Generate the complete, high-fidelity code content for this new file. Match their exact coding style, naming conventions, casing, imports, and indentation!
+You are allowed and highly encouraged to generate **multiple files simultaneously** (such as Gherkin .feature files, Step Definitions, Page Objects, and test datasets in JSON/CSV) to fulfill their request in one shot!
 
-Your output MUST be a valid JSON object matching the following structure exactly, with absolutely NO other text, markdown blocks, or commentary:
+Match their exact coding style, naming conventions, casing, imports, and indentation!
 
-{
-    "suggested_path": "The relative directory path and filename where this file should reside (e.g., 'pages/ChatPage.js' or 'src/test/java/com/qa/pages/ChatPage.java')",
-    "code": "Full, complete, and syntactically correct file content. Do not use placeholders or comments like '... rest of code'. Write out all locators, functions, or test steps in their entirety."
-}
+--- ⚠️ EXTREMELY STRICT OUTPUT FORMAT MANDATE ⚠️ ---
+You MUST output all generated files in the following parsable block-based format exactly. Do not use JSON strings or markdown wrappers around the entire response. Write each file's complete suggested relative path and code content using these delimiters:
 
-Do not include any introductory or postamble text. Return ONLY the raw JSON object.
+=== START_FILE: suggested/relative/path/to/file.ext ===
+[Raw, complete, unescaped, and production-ready source code here]
+=== END_FILE ===
+
+You are STRICTLY FORBIDDEN from using placeholder comments like "// implement here" or "... rest of code". Every file must be fully written and syntactically correct in its raw, unescaped form.
+
+Do not include any introductory or postamble text. Return ONLY the raw files blocks list.

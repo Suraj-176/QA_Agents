@@ -1,0 +1,56 @@
+
+====================================================================
+⏰ TIMESTAMP: 2026-06-23 12:46:44
+📝 MESSAGE: Initiated file generation extender. Folder: C:/python/HybridAutomation_Playwright, Instruction: 'create a test for loginDemoPage'
+====================================================================
+
+====================================================================
+⏰ TIMESTAMP: 2026-06-23 12:47:49
+📝 MESSAGE: Initiated file generation extender. Folder: C:/python/HybridAutomation_Playwright, Instruction: 'create a test  script for loginDemoPage'
+====================================================================
+
+====================================================================
+⏰ TIMESTAMP: 2026-06-23 12:48:34
+📝 MESSAGE: Initiated file write operation. Folder: C:/python/HybridAutomation_Playwright, Destination Path: 'test/test_login_demo.py'
+====================================================================
+
+====================================================================
+⏰ TIMESTAMP: 2026-06-23 12:50:04
+📝 MESSAGE: Initiated framework scaffolding. Tool: Playwright, Language: JavaScript, Pattern: BDD (Cucumber / Gherkin), Destination: C:/New folder
+====================================================================
+
+====================================================================
+⏰ TIMESTAMP: 2026-06-23 13:32:08
+📝 MESSAGE: Initiated framework scaffolding. Tool: Playwright, Language: TypeScript, Pattern: BDD (Cucumber / Gherkin), Destination: C:/New folder
+====================================================================
+
+====================================================================
+⏰ TIMESTAMP: 2026-06-23 13:32:08
+📝 MESSAGE: Automation bootstrapping failed: 'AutomationAgentService' object has no attribute '_load_prompt_template'
+--------------------------------------------------------------------
+🚨 EXCEPTION TRACEBACK:
+Traceback (most recent call last):
+  File "C:\QAAgents\backend\app\routes\automation.py", line 143, in bootstrap_framework
+    result = await automation_service.bootstrap_framework(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\QAAgents\backend\app\services\automation_agent.py", line 149, in bootstrap_framework
+    template = self._load_prompt_template(prompt_filename)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'AutomationAgentService' object has no attribute '_load_prompt_template'
+
+====================================================================
+
+====================================================================
+⏰ TIMESTAMP: 2026-06-23 13:34:04
+📝 MESSAGE: Initiated framework scaffolding. Tool: Playwright, Language: TypeScript, Pattern: BDD (Cucumber / Gherkin), Destination: C:/New folder
+====================================================================
+
+====================================================================
+⏰ TIMESTAMP: 2026-06-23 13:40:06
+📝 MESSAGE: Initiated framework scaffolding. Tool: Cypress, Language: TypeScript, Pattern: BDD (Cucumber / Gherkin), Destination: ZIP-Only
+====================================================================
+
+====================================================================
+⏰ TIMESTAMP: 2026-06-23 13:42:41
+📝 MESSAGE: Initiated framework scaffolding. Tool: Selenium, Language: TypeScript, Pattern: BDD (Cucumber / Gherkin), Destination: ZIP-Only
+====================================================================
