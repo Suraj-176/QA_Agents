@@ -60,6 +60,7 @@ class RegressionTestResult(Base):
     diff_image_path = Column(String, nullable=True)
     is_mismatch = Column(Boolean, default=False)
     error_message = Column(Text, nullable=True)
+    ai_analysis = Column(Text, nullable=True) # Persistent AI visual triage report details!
     created_at = Column(DateTime, default=datetime.utcnow)
 
     # Relationships

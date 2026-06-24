@@ -21,6 +21,21 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 # Automatically create all SQLite tables on application startup
 Base.metadata.create_all(bind=engine)
 
+# Symmetrical database dynamic migration support!
+# Adds the 'ai_analysis' column to 'regression_test_results' dynamically if missing.
+from app.database import SessionLocal
+from sqlalchemy import text
+_db = SessionLocal()
+try:
+    _db.execute(text("ALTER TABLE regression_test_results ADD COLUMN ai_analysis TEXT"))
+    _db.commit()
+    print("   🛠️ SQLite Dynamic Schema Migration: Added 'ai_analysis' column successfully!")
+except Exception:
+    # Ignore if column already exists (sqlite raises exception on duplicates)
+    pass
+finally:
+    _db.close()
+
 app = FastAPI(
     title="QA.AI Platform API Server",
     description="Decoupled, multi-agent AI assistant for visual regression testing, test case generation, and bug reporting.",

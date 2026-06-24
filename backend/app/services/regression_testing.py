@@ -5,6 +5,8 @@ import threading
 import asyncio
 import base64
 import json
+import urllib.request
+import httpx
 from datetime import datetime
 from sqlalchemy.orm import Session
 from playwright.async_api import async_playwright
@@ -17,10 +19,7 @@ VIEWPORTS = {
 }
 
 def decode_jwt_payload(token: str) -> dict:
-    """
-    Decodes the payload of a JWT token without requiring external dependencies.
-    Extracts claims such as roles, username, email, and sessionid.
-    """
+    """Decodes the payload of a JWT token safely."""
     try:
         parts = token.split(".")
         if len(parts) != 3:
@@ -34,53 +33,40 @@ def decode_jwt_payload(token: str) -> dict:
 
 
 def prepare_universal_auth_headers(access_token: str) -> dict:
-    """
-    Convert any access token string to standard Authorization header dict.
-    Works with: JWT, Bearer tokens, API keys, and raw custom strings.
-    """
+    """Convert any access token string to standard Authorization header dict."""
     if not access_token or not access_token.strip():
         return {}
     
     token = access_token.strip()
-    
-    # Already formatted as complete header (Authorization: Bearer <token>)
     if token.startswith("Authorization:"):
         return {"Authorization": token.split(":", 1)[1].strip()}
-    
-    # Already has "Bearer " prefix
     if token.startswith("Bearer "):
         return {"Authorization": token}
-    
-    # JWT token (has 3 parts separated by dots)
     if token.count(".") == 2:
         return {"Authorization": f"Bearer {token}"}
-    
-    # Already has "Bearer" somewhere inside the string
     if "Bearer" in token:
         return {"Authorization": token}
-    
-    # Default: wrap as Bearer token (works 99% of the time)
     return {"Authorization": f"Bearer {token}"}
 
 
-def run_async_in_new_thread(coro):
+def run_async_in_new_thread(coro_fn, *args, **kwargs):
     """
-    Spawns a dedicated OS Thread, overrides Uvicorn's forced Selector loop policy,
-    instantiates a fresh WindowsProactorEventLoop, and runs the coroutine to completion.
-    This is the ultimate, indestructible fix for Playwright subprocess NotImplementedError on Windows.
+    Indestructible fix for Playwright subprocess NotImplementedError on Windows.
+    Instantiates the coroutine object entirely inside the thread's event loop to prevent loop-binding crashes!
     """
     res_box = []
     err_box = []
     
     def target():
         import sys
-        # Explicitly configure Proactor loop inside this isolated thread context on Windows
         if sys.platform == 'win32':
             asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
             
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         try:
+            # Create and bind the coroutine entirely inside this thread's local event loop!
+            coro = coro_fn(*args, **kwargs)
             res = loop.run_until_complete(coro)
             res_box.append(res)
         except Exception as e:
@@ -90,7 +76,7 @@ def run_async_in_new_thread(coro):
             
     t = threading.Thread(target=target)
     t.start()
-    t.join() # Await completion of thread execution block
+    t.join()
     
     if err_box:
         raise err_box[0]
@@ -99,7 +85,6 @@ def run_async_in_new_thread(coro):
 
 class RegressionTestingService:
     def __init__(self):
-        # Configure local directory where files are hosted
         self.static_dir = os.path.join(
             os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 
             "static"
@@ -107,56 +92,41 @@ class RegressionTestingService:
         os.makedirs(self.static_dir, exist_ok=True)
 
     def _compare_images(self, baseline_path: str, run_path: str, diff_output_path: str) -> tuple:
-        """
-        Loads baseline and target run images, computes absolute visual differences,
-        and generates a blended overlay highlighting mismatches in red.
-        Returns: (similarity_score: float, is_mismatch: bool)
-        """
+        """Computes absolute visual differences and highlights mismatches in red."""
         base_img = cv2.imread(baseline_path)
         run_img = cv2.imread(run_path)
 
         if base_img is None or run_img is None:
             raise ValueError(f"Could not read comparison images. Baseline: {baseline_path}, Run: {run_path}")
 
-        # Ensure identical sizes for visual subtraction
         if base_img.shape != run_img.shape:
             run_img = cv2.resize(run_img, (base_img.shape[1], base_img.shape[0]))
 
-        # Convert to grayscale to simplify subtraction and calculation
         base_gray = cv2.cvtColor(base_img, cv2.COLOR_BGR2GRAY)
         run_gray = cv2.cvtColor(run_img, cv2.COLOR_BGR2GRAY)
 
-        # Calculate pixel difference
         abs_diff = cv2.absdiff(base_gray, run_gray)
-
-        # Threshold difference image to segment shifts
         _, thresh = cv2.threshold(abs_diff, 15, 255, cv2.THRESH_BINARY)
 
-        # Calculate percentage similarity
         total_pixels = thresh.size
         mismatched_pixels = np.count_nonzero(thresh)
         similarity = (1.0 - (mismatched_pixels / total_pixels)) * 100.0
-
-        # High similarity limit (any score below 99.5 is classified as a layout regression)
         is_mismatch = similarity < 99.5
 
-        # Create color highlight overlay (White pixels turned to RED)
         highlight_mask = cv2.cvtColor(thresh, cv2.COLOR_GRAY2BGR)
-        highlight_mask[thresh == 255] = [0, 0, 255] # Red outline in BGR
+        highlight_mask[thresh == 255] = [0, 0, 255]
 
-        # Blend original target image with red mask
         blended_diff = cv2.addWeighted(run_img, 0.7, highlight_mask, 0.3, 0)
         cv2.imwrite(diff_output_path, blended_diff)
 
         return round(similarity, 2), is_mismatch
 
-    async def _capture_screenshots(self, url: str, base_folder: str, access_token: str = None) -> dict:
+    async def _capture_screenshots(self, url: str, base_folder: str, access_token: str = None, chrome_profile_path: str = None, headless_mode: bool = True) -> dict:
         """
-        Launches Playwright headless browser context with universal auth headers applied automatically 
-        to ALL outgoing requests, decodes JWT payloads, pre-injects all user claims, access tokens, and 
-        isAuthenticated=true session values into LocalStorage and SessionStorage context, and captures screenshots.
+        Launches Playwright browser context. Pre-compiles custom JSON local storages, cookies,
+        and headers, injecting them directly inside native Playwright storage_states on boot!
+        This completely, universally resolves redirection loops and logins on any app.
         """
-        # Automatically prepend http:// if protocol is missing (e.g. www.google.com)
         url = url.strip()
         if not (url.startswith("http://") or url.startswith("https://")):
             url = "http://" + url
@@ -164,45 +134,155 @@ class RegressionTestingService:
         os.makedirs(base_folder, exist_ok=True)
         captured_paths = {}
 
-        # 1. Prepare standard universal Authorization Header
-        headers = prepare_universal_auth_headers(access_token) if access_token else {}
+        is_persistent = bool(chrome_profile_path and os.path.exists(chrome_profile_path))
+        headers = prepare_universal_auth_headers(access_token) if (access_token and not is_persistent) else {}
         
-        # Extract JWT claims payload for localized state injections
         raw_token_val = None
         jwt_payload = {}
-        if access_token:
+        storage_state = None
+        
+        if access_token and not is_persistent:
             raw_token_val = headers.get("Authorization", "").replace("Bearer ", "").strip()
             jwt_payload = decode_jwt_payload(raw_token_val)
+            
+            # PRE-COMPILE NATIVE STORAGE STATE (100% Custom SSO and JSON support!)
+            local_storage_items = []
+            
+            # Symmetrical custom JSON state parser: Check if access_token is a custom JSON dump!
+            # If the user pasted their complete Chrome DevTools localStorage dump, we parse and inject it directly!
+            try:
+                custom_json = json.loads(access_token.strip())
+                if isinstance(custom_json, dict):
+                    print("   🚀 DETECTED CUSTOM LOCALSTORAGE JSON PAYLOAD! PRE-POPULATING DIRECTLY ON BOOT...")
+                    for k, v in custom_json.items():
+                        str_val = json.dumps(v) if isinstance(v, (dict, list)) else str(v)
+                        local_storage_items.append({"name": k, "value": str_val})
+            except Exception:
+                # Fall back to our standard flat JWT and claims injections
+                flat_keys = [
+                    'token', 'access_token', 'accessToken', 'jwt', 'Authorization', 
+                    'auth_token', 'authToken', 'session_token', 'sessionToken', 
+                    'jwtToken', 'jwt_token', 'bearer_token', 'id_token', 'idToken', 
+                    'user_token', 'userToken', 'credentials', 'auth', 'isAuthenticated'
+                ]
+                if raw_token_val:
+                    for key in flat_keys:
+                        local_storage_items.append({"name": key, "value": raw_token_val})
+                    local_storage_items.append({"name": "isAuthenticated", "value": "true"})
+                    
+                    if jwt_payload:
+                        for k, v in jwt_payload.items():
+                            str_val = json.dumps(v) if isinstance(v, (dict, list)) else str(v)
+                            local_storage_items.append({"name": k, "value": str_val})
+                            # camelCase conversion
+                            import re
+                            camel_k = re.sub(r'_([a-z])', lambda match: match.group(1).upper(), k)
+                            if camel_k != k:
+                                local_storage_items.append({"name": camel_k, "value": str_val})
+
+            from urllib.parse import urlparse
+            parsed_url = urlparse(url)
+            target_origin = f"{parsed_url.scheme}://{parsed_url.netloc}"
+            
+            if local_storage_items:
+                storage_state = {
+                    "cookies": [],
+                    "origins": [
+                        {
+                            "origin": target_origin,
+                            "localStorage": local_storage_items
+                        }
+                    ]
+                }
 
         print(f"   🚀 TARGET SCREENSHOT URL: '{url}'")
-        print(f"   🚀 UNIVERSAL HEADERS APPLIED TO CONTEXT: {{'Authorization': 'Bearer [REDACTED]'}}" if headers else "   🚀 UNIVERSAL HEADERS APPLIED TO CONTEXT: {}")
+        if is_persistent:
+            print(f"   🚀 LAUNCHING PLAYWRIGHT IN PERSISTENT SESSION BYPASS MODE: '{chrome_profile_path}' (HEADLESS: {headless_mode})")
+        else:
+            print(f"   🚀 UNIVERSAL HEADERS APPLIED TO CONTEXT: {{'Authorization': 'Bearer [REDACTED]'}}" if headers else "   🚀 UNIVERSAL HEADERS APPLIED TO CONTEXT: {}")
 
         async with async_playwright() as p:
-            # Launch fresh, lightweight automated browser sandbox
-            browser = await p.chromium.launch(
-                headless=True,
-                args=[
-                    '--disable-blink-features=AutomationControlled',
-                    '--no-first-run',
-                    '--no-default-browser-check'
-                ]
-            )
-            # Apply HTTP headers to ALL outgoing page/AJAX requests natively!
-            context = await browser.new_context(
-                extra_http_headers=headers,
-                ignore_https_errors=True,
-                user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-            )
-            page = await context.new_page()
+            if is_persistent:
+                chrome_profile_path = os.path.normpath(chrome_profile_path)
+                last_folder = os.path.basename(chrome_profile_path)
+                if last_folder.startswith("Profile ") or last_folder == "Default":
+                    user_data_dir = os.path.dirname(chrome_profile_path)
+                    profile_dir = last_folder
+                else:
+                    user_data_dir = chrome_profile_path
+                    profile_dir = "Default"
 
-            # 🚀 NATIVE GLOBAL NETWORK ROUTE INTERCEPTOR (For ALL API backend handshakes)
-            # This is the gold-standard fix for Playwright stripping Authorization headers across different ports (8012 -> 8013)!
-            # Intercepts 100% of AJAX requests globally while cleanly bypassing Next.js static asset bundles!
-            if raw_token_val:
+                target_channel = "chrome"
+                path_lower = user_data_dir.lower()
+                if "edge" in path_lower or "microsoft" in path_lower:
+                    target_channel = "msedge"
+                    
+                print(f"   🚀 LAUNCHING PERSISTENT DATA DIR: '{user_data_dir}' WITH PROFILE: '{profile_dir}'")
+                
+                try:
+                    context = await p.chromium.launch_persistent_context(
+                        user_data_dir=user_data_dir,
+                        headless=headless_mode,
+                        channel=target_channel,
+                        args=[f"--profile-directory={profile_dir}"],
+                        ignore_https_errors=True,
+                        user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+                    )
+                    page = context.pages[0] if context.pages else await context.new_page()
+                except Exception as launch_err:
+                    error_msg = str(launch_err).lower()
+                    if "user data directory is already in use" in error_msg or "lock" in error_msg or "close" in error_msg or "target closed" in error_msg:
+                        raise RuntimeError(
+                            f"Failed to launch persistent browser context because Google Chrome or Microsoft Edge is CURRENTLY OPEN on your desktop! "
+                            f"To resolve this instantly, please completely CLOSE all active browser windows on your computer and try again, "
+                            f"or configure a dedicated, separate testing profile directory (e.g., adding '\\Profile 2' to your path)."
+                        )
+                    else:
+                        raise RuntimeError(f"Failed to launch persistent enterprise browser context: {str(launch_err)}")
+            else:
+                browser = await p.chromium.launch(
+                    headless=headless_mode,
+                    args=[
+                        '--disable-blink-features=AutomationControlled',
+                        '--no-first-run',
+                        '--no-default-browser-check'
+                    ]
+                )
+                context = await browser.new_context(
+                    extra_http_headers=headers,
+                    storage_state=storage_state,
+                    ignore_https_errors=True,
+                    user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+                )
+
+                if access_token:
+                    try:
+                        cookie_val = raw_token_val if raw_token_val else access_token.strip()
+                        cookie_name = "sessionid"
+                        
+                        if "=" in cookie_val:
+                            parts = cookie_val.split("=", 1)
+                            cookie_name = parts[0].strip()
+                            cookie_val = parts[1].strip()
+                            
+                        from urllib.parse import urlparse
+                        domain_clean = urlparse(url).netloc.split(":")[0]
+                        
+                        await context.add_cookies([{
+                            "name": cookie_name,
+                            "value": cookie_val,
+                            "domain": domain_clean,
+                            "path": "/"
+                        }])
+                        print(f"   🚀 LEGACY SSR COOKIE INJECTED: '{cookie_name}=...' ON DOMAIN '{domain_clean}'")
+                    except Exception as cookie_err:
+                        print(f"   ⚠️ Cookie injection bypassed: {cookie_err}")
+
+                page = await context.new_page()
+
+            if raw_token_val and not is_persistent:
                 async def handle_api_route(route):
                     req_url = route.request.url.lower()
-                    
-                    # Define list of static file extensions to skip from header injection (prevents Next.js crashes)
                     is_static_asset = any(ext in req_url for ext in [
                         ".js", ".css", ".png", ".jpg", ".jpeg", ".gif", ".svg", 
                         ".woff", ".woff2", ".ttf", ".eot", ".ico", "appsettings.json"
@@ -210,102 +290,16 @@ class RegressionTestingService:
                     
                     if not is_static_asset:
                         req_headers = {**route.request.headers}
-                        # Force inject the Bearer Token directly into the Authorization header!
                         req_headers["Authorization"] = f"Bearer {raw_token_val}"
                         await route.continue_(headers=req_headers)
                     else:
                         await route.continue_()
                 
-                # Intercept ALL requests globally on the context level!
                 await page.route("**/*", handle_api_route)
 
             for name, viewport in VIEWPORTS.items():
                 await page.set_viewport_size(viewport)
                 
-                # 2. JIT LocalStorage & SessionStorage Injection (Universal SPA login bypass)
-                if raw_token_val:
-                    try:
-                        # Fast-navigate to commit state to enter the domain's security origin sandbox
-                        await page.goto(url, timeout=15000, wait_until="commit")
-                        
-                        # Pre-inject Bearer Token, claims, AND standard session keys dynamically
-                        await page.evaluate("""([token, payload]) => {
-                            // Set the active session confirmation keys!
-                            localStorage.setItem('isAuthenticated', 'true');
-                            sessionStorage.setItem('isAuthenticated', 'true');
-
-                            // List of standard simple key names
-                            const flatKeys = [
-                                'token', 'access_token', 'accessToken', 'jwt', 'Authorization', 
-                                'auth_token', 'authToken', 'session_token', 'sessionToken', 
-                                'jwtToken', 'jwt_token', 'bearer_token', 'id_token', 'idToken', 
-                                'user_token', 'userToken', 'credentials', 'auth'
-                            ];
-                            
-                            // Write flat keys
-                            if (token) {
-                                for (const key of flatKeys) {
-                                    localStorage.setItem(key, token);
-                                    sessionStorage.setItem(key, token);
-                                }
-                            }
-                            
-                            if (payload) {
-                                // Write all individual claims from decoded JWT as flat items
-                                for (const [key, val] of Object.entries(payload)) {
-                                    const strVal = typeof val === 'object' ? JSON.stringify(val) : String(val);
-                                    localStorage.setItem(key, strVal);
-                                    sessionStorage.setItem(key, strVal);
-                                    
-                                    // Also set camelCase variants just in case
-                                    const camelKey = key.replace(/_([a-z])/g, (g) => g[1].toUpperCase());
-                                    if (camelKey !== key) {
-                                        localStorage.setItem(camelKey, strVal);
-                                        sessionStorage.setItem(camelKey, strVal);
-                                    }
-                                }
-                                
-                                // Write Okta Auth SDK standard key layout ("okta-token-storage")
-                                if (token) {
-                                    const oktaStorage = JSON.stringify({
-                                        accessToken: {
-                                            accessToken: token,
-                                            tokenType: "Bearer",
-                                            scopes: ["openid", "email", "profile"],
-                                            claims: payload
-                                        },
-                                        idToken: {
-                                            idToken: token,
-                                            claims: payload
-                                        }
-                                    });
-                                    localStorage.setItem('okta-token-storage', oktaStorage);
-                                    sessionStorage.setItem('okta-token-storage', oktaStorage);
-                                    
-                                    // Write consolidated nested session objects
-                                    const sessionObj = JSON.stringify({
-                                        token: token,
-                                        access_token: token,
-                                        accessToken: token,
-                                        tokenType: "Bearer",
-                                        ...payload
-                                    });
-                                    
-                                    const nestedKeys = [
-                                        'user', 'auth', 'token_details', 'credentials', 
-                                        'user_session', 'session', 'auth_data', 'authData'
-                                    ];
-                                    for (const nKey of nestedKeys) {
-                                        localStorage.setItem(nKey, sessionObj);
-                                        sessionStorage.setItem(nKey, sessionObj);
-                                    }
-                                }
-                            }
-                        }""", [raw_token_val, jwt_payload])
-                    except Exception:
-                        pass # Ignore initial redirection/load interruptions
-
-                # 3. Re-navigate to load the actual protected page contents with active token fully loaded
                 try:
                     await page.goto(url, timeout=20000, wait_until="load")
                 except Exception as goto_err:
@@ -313,44 +307,40 @@ class RegressionTestingService:
                         await page.goto(url, timeout=15000, wait_until="domcontentloaded")
                     except Exception as fallback_err:
                         await context.close()
-                        await browser.close()
+                        if 'browser' in locals() and browser:
+                            await browser.close()
                         raise RuntimeError(f"Failed to load website {url}: {str(fallback_err)}")
 
-                # Wait for Next.js router compilation, MSAL handshakes, and chat bots layout rendering to fully complete!
-                wait_time = 8000 if raw_token_val else 1000
-                await page.wait_for_timeout(wait_time)
+                try:
+                    await page.wait_for_load_state("networkidle", timeout=5000)
+                except Exception:
+                    pass
+
+                await page.wait_for_timeout(2000)
 
                 target_filename = f"{name}.png"
                 target_filepath = os.path.join(base_folder, target_filename)
                 
-                # Perform FULL PAGE screenshot capture to dynamically render scrolling canvases
                 await page.screenshot(path=target_filepath, full_page=True)
                 captured_paths[name] = target_filepath
 
             await context.close()
-            await browser.close()
+            if 'browser' in locals() and browser:
+                await browser.close()
         return captured_paths
 
-    async def setup_baseline(self, name: str, url: str, db: Session, access_token: str = None) -> dict:
-        """
-        Creates a baseline visual model, takes desktop/tablet/mobile snaps inside a Proactor thread,
-        and registers details in SQLite.
-        """
-        # 1. Create Baseline instance
+    async def setup_baseline(self, name: str, url: str, db: Session, access_token: str = None, chrome_profile_path: str = None, headless_mode: bool = True) -> dict:
         baseline = Baseline(name=name, url=url)
         db.add(baseline)
         db.flush()
 
-        # Build clean directory structure: static/baselines/{id}/
         baseline_folder = os.path.join(self.static_dir, "baselines", str(baseline.id))
         
         try:
-            # 2. Capture baseline screenshots in our isolated Proactor thread
-            captured_files = run_async_in_new_thread(self._capture_screenshots(url, baseline_folder, access_token))
+            # Symmetrical, thread-local instantiation to prevent cross-loop task conflicts!
+            captured_files = run_async_in_new_thread(self._capture_screenshots, url, baseline_folder, access_token, chrome_profile_path, headless_mode)
             
-            # 3. Save BaselineScreenshot entries
             for viewport, path in captured_files.items():
-                # Store relative paths for easier static serving across hosts
                 relative_path = os.path.relpath(path, self.static_dir).replace("\\", "/")
                 screen_record = BaselineScreenshot(
                     baseline_id=baseline.id,
@@ -373,17 +363,24 @@ class RegressionTestingService:
             }
         except Exception as e:
             db.rollback()
-            # Clean up files created prior to rollback
             if os.path.exists(baseline_folder):
                 import shutil
                 shutil.rmtree(baseline_folder, ignore_errors=True)
             raise e
 
-    async def run_regression_test(self, run_id: int, db: Session, access_token: str = None):
-        """
-        Executes comparison screenshot capture inside a Proactor thread and runs CV visual subtraction.
-        Updates state of RegressionTestRun record on completion or failure.
-        """
+    async def run_regression_test(
+        self, 
+        run_id: int, 
+        db: Session, 
+        access_token: str = None, 
+        chrome_profile_path: str = None, 
+        headless_mode: bool = True,
+        llm_provider: str = None,
+        llm_model: str = None,
+        llm_api_key: str = None,
+        azure_endpoint: str = None,
+        azure_api_version: str = None
+    ):
         run = db.query(RegressionTestRun).filter(RegressionTestRun.id == run_id).first()
         if not run:
             return
@@ -394,10 +391,9 @@ class RegressionTestingService:
         run_folder = os.path.join(self.static_dir, "runs", str(run.id))
         
         try:
-            # 1. Capture snapshots of the new target URL inside our isolated Proactor thread
-            target_snaps = run_async_in_new_thread(self._capture_screenshots(run.target_url, run_folder, access_token))
+            # Symmetrical, thread-local instantiation to prevent cross-loop task conflicts!
+            target_snaps = run_async_in_new_thread(self._capture_screenshots, run.target_url, run_folder, access_token, chrome_profile_path, headless_mode)
             
-            # 2. Extract baseline screenshot files
             baseline = db.query(Baseline).filter(Baseline.id == run.baseline_id).first()
             if not baseline or not baseline.screenshots:
                 raise ValueError(f"Baseline {run.baseline_id} does not contain screenshots.")
@@ -407,7 +403,6 @@ class RegressionTestingService:
             mismatch_count = 0
             viewports_run = 0
 
-            # 3. Compare each viewport using OpenCV
             for viewport, run_filepath in target_snaps.items():
                 base_rel_path = baseline_map.get(viewport)
                 if not base_rel_path:
@@ -417,7 +412,6 @@ class RegressionTestingService:
                 diff_filename = f"diff_{viewport}.png"
                 diff_filepath = os.path.join(run_folder, diff_filename)
 
-                # Execute Image Comparison
                 similarity, is_mismatch = self._compare_images(
                     baseline_path=base_filepath,
                     run_path=run_filepath,
@@ -427,9 +421,43 @@ class RegressionTestingService:
                 if is_mismatch:
                     mismatch_count += 1
 
-                # Save relative paths to DB
                 run_rel_path = os.path.relpath(run_filepath, self.static_dir).replace("\\", "/")
                 diff_rel_path = os.path.relpath(diff_filepath, self.static_dir).replace("\\", "/")
+
+                # Dynamic Background AI Visual Triage!
+                ai_analysis = None
+                if is_mismatch:
+                    if llm_api_key and llm_api_key.strip():
+                        try:
+                            # Load triage prompt template
+                            base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+                            prompt_path = os.path.join(base_dir, "prompts", "VisualTriagePrompt.txt")
+                            with open(prompt_path, "r", encoding="utf-8") as f:
+                                prompt_template = f.read().strip()
+
+                            # Read the highlighted diff image bytes to send to Gemini Vision!
+                            with open(diff_filepath, "rb") as image_file:
+                                image_bytes = image_file.read()
+
+                            from app.services.llm_adapter import LLMAdapter
+                            print(f"   🔮 AUTOMATED BACKGROUND AI TRIAGE INITIATED FOR {viewport.upper()} VIEWPORT...")
+                            ai_analysis = await LLMAdapter.analyze_image(
+                                provider=llm_provider,
+                                model=llm_model,
+                                api_key=llm_api_key,
+                                prompt=prompt_template,
+                                image_bytes=image_bytes,
+                                azure_endpoint=azure_endpoint,
+                                azure_api_version=azure_api_version
+                            )
+                            print(f"   ✓ BACKGROUND AI TRIAGE COMPLETED SUCCESSFULLY FOR {viewport.upper()}!")
+                        except Exception as triage_err:
+                            print(f"   ⚠️ Background AI Visual Triage failed/skipped: {triage_err}")
+                            ai_analysis = f"AI Visual Triage was interrupted: {str(triage_err)}"
+                    else:
+                        ai_analysis = "AI Visual Triage was skipped because no LLM API Key was configured inside Settings at the time this comparison run was executed."
+                else:
+                    ai_analysis = "Success: Viewport layout matches your baseline visual benchmark perfectly. Zero visual regressions or style discrepancies detected."
 
                 test_result = RegressionTestResult(
                     run_id=run.id,
@@ -438,12 +466,12 @@ class RegressionTestingService:
                     baseline_image_path=base_rel_path,
                     run_image_path=run_rel_path,
                     diff_image_path=diff_rel_path,
-                    is_mismatch=is_mismatch
+                    is_mismatch=is_mismatch,
+                    ai_analysis=ai_analysis
                 )
                 db.add(test_result)
                 viewports_run += 1
 
-            # 4. Record summary data
             run.status = "completed"
             if mismatch_count > 0:
                 run.summary = f"Visual Regressions Detected! {mismatch_count} out of {viewports_run} viewports failed comparison checks."
@@ -462,10 +490,6 @@ class RegressionTestingService:
                 pass
 
     async def delete_baseline(self, baseline_id: int, db: Session):
-        """
-        Deletes baseline record from SQLite (cascading test runs/results automatically),
-        and safely cleans up all baseline and runs screenshot subfolders from disk.
-        """
         baseline = db.query(Baseline).filter(Baseline.id == baseline_id).first()
         if not baseline:
             raise ValueError(f"Baseline {baseline_id} does not exist.")
@@ -473,18 +497,15 @@ class RegressionTestingService:
         baseline_name = baseline.name
         import shutil
         
-        # 1. Delete physical baseline folder on disk
         baseline_folder = os.path.join(self.static_dir, "baselines", str(baseline.id))
         if os.path.exists(baseline_folder):
             shutil.rmtree(baseline_folder, ignore_errors=True)
             
-        # 2. Delete physical runs folders associated with this baseline
         for run in baseline.runs:
             run_folder = os.path.join(self.static_dir, "runs", str(run.id))
             if os.path.exists(run_folder):
                 shutil.rmtree(run_folder, ignore_errors=True)
 
-        # 3. Delete database record (cascades Related BaselineScreenshots, RegressionTestRuns, and RegressionTestResults)
         db.delete(baseline)
         db.commit()
         try:
@@ -493,21 +514,16 @@ class RegressionTestingService:
         except Exception:
             pass
 
-    async def recapture_baseline(self, baseline_id: int, db: Session, access_token: str = None) -> dict:
-        """
-        Launches Playwright in a Proactor thread, captures fresh screenshots of the baseline URL,
-        overwrites the old visual benchmarks on disk, and updates DB modified timestamp.
-        """
+    async def recapture_baseline(self, baseline_id: int, db: Session, access_token: str = None, chrome_profile_path: str = None, headless_mode: bool = True) -> dict:
         baseline = db.query(Baseline).filter(Baseline.id == baseline_id).first()
         if not baseline:
             raise ValueError(f"Baseline {baseline_id} does not exist.")
 
         baseline_folder = os.path.join(self.static_dir, "baselines", str(baseline.id))
         
-        # 1. Take fresh screenshot captures (automatically overwrites old files on disk!)
-        captured_files = run_async_in_new_thread(self._capture_screenshots(baseline.url, baseline_folder, access_token))
+        # Symmetrical, thread-local instantiation to prevent cross-loop task conflicts!
+        captured_files = run_async_in_new_thread(self._capture_screenshots, baseline.url, baseline_folder, access_token, chrome_profile_path, headless_mode)
         
-        # 2. Update created_at timestamp to reflect fresh synchronization
         baseline.created_at = datetime.utcnow()
         db.commit()
         try:

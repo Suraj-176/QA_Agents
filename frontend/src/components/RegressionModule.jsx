@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import axios from 'axios'
-import { Eye, Play, Plus, RefreshCw, AlertTriangle, CheckCircle, Image as ImageIcon, Trash, ChevronRight } from 'lucide-react'
+import { Eye, Play, Plus, RefreshCw, AlertTriangle, CheckCircle, Image as ImageIcon, Trash, ChevronRight, Sparkles } from 'lucide-react'
 
 const API_BASE_URL = 'http://127.0.0.1:5000/api'
 const STATIC_URL = 'http://127.0.0.1:5000/static'
@@ -21,6 +21,8 @@ function RegressionModule() {
 
   // Modal visual states
   const [activeModalImg, setActiveModalImg] = useState(null)
+  const [triageReport, setTriageReport] = useState(null) // Holds rich, written AI visual regression audits
+  const [triageLoading, setTriageLoading] = useState(false)
 
   useEffect(() => {
     fetchBaselines()
@@ -47,8 +49,9 @@ function RegressionModule() {
     if (!newName || !newUrl) return
     setLoading(true)
 
-    // Read transient browser headers from localStorage
+    // Read transient browser headers and headless settings from localStorage
     const browserHeaders = localStorage.getItem('browser_headers') || ""
+    const visualHeadless = localStorage.getItem('visual_headless') || 'true'
     
     // Normalize Windows backslashes (\) to forward slashes (/) for HTTP header transmission safety!
     const chromeProfile = (localStorage.getItem('chrome_profile') || "").replace(/\\/g, '/')
@@ -63,7 +66,8 @@ function RegressionModule() {
         {
           headers: {
             'X-Browser-Headers': browserHeaders,
-            'X-Chrome-Profile': chromeProfile
+            'X-Chrome-Profile': chromeProfile,
+            'X-Visual-Headless': visualHeadless
           }
         }
       )
@@ -100,6 +104,7 @@ function RegressionModule() {
     
     setLoading(true)
     const browserHeaders = localStorage.getItem('browser_headers') || ""
+    const visualHeadless = localStorage.getItem('visual_headless') || 'true'
     const chromeProfile = (localStorage.getItem('chrome_profile') || "").replace(/\\/g, '/')
 
     try {
@@ -109,7 +114,8 @@ function RegressionModule() {
         {
           headers: {
             'X-Browser-Headers': browserHeaders,
-            'X-Chrome-Profile': chromeProfile
+            'X-Chrome-Profile': chromeProfile,
+            'X-Visual-Headless': visualHeadless
           }
         }
       )
@@ -129,7 +135,16 @@ function RegressionModule() {
     setTestResult(null)
 
     const browserHeaders = localStorage.getItem('browser_headers') || ""
+    const visualHeadless = localStorage.getItem('visual_headless') || 'true'
     const chromeProfile = (localStorage.getItem('chrome_profile') || "").replace(/\\/g, '/')
+
+    // Load active isolated LLM provider credentials to pass to background triage worker
+    const provider = localStorage.getItem('llm_provider') || 'gemini'
+    const apiKey = localStorage.getItem(`llm_${provider}_api_key`) || ''
+    const model = localStorage.getItem(`llm_${provider}_model`) || ''
+    
+    const azureEndpoint = localStorage.getItem('azure_endpoint') || ''
+    const azureApiVersion = localStorage.getItem('azure_api_version') || '2023-05-15'
 
     try {
       const response = await axios.post(
@@ -141,7 +156,13 @@ function RegressionModule() {
         {
           headers: {
             'X-Browser-Headers': browserHeaders,
-            'X-Chrome-Profile': chromeProfile
+            'X-Chrome-Profile': chromeProfile,
+            'X-Visual-Headless': visualHeadless,
+            'X-LLM-Provider': provider,
+            'X-LLM-Model': model,
+            'X-LLM-API-Key': apiKey,
+            'X-Azure-Endpoint': azureEndpoint,
+            'X-Azure-API-Version': azureApiVersion
           }
         }
       )
@@ -151,6 +172,87 @@ function RegressionModule() {
     } catch (err) {
       alert(`Testing initiation failed: ${err.message}`)
       setTesting(false)
+    }
+  }
+
+  const handleRunAllRegressions = async () => {
+    if (baselines.length === 0) {
+      alert("No visual baselines established yet. Please capture at least one baseline first.")
+      return
+    }
+    if (!confirm("Are you sure you want to run parallel visual regression tests for ALL established pages in the background?")) return
+    
+    setTesting(true)
+    const browserHeaders = localStorage.getItem('browser_headers') || ""
+    const visualHeadless = localStorage.getItem('visual_headless') || 'true'
+    const chromeProfile = (localStorage.getItem('chrome_profile') || "").replace(/\\/g, '/')
+
+    // Load active isolated LLM provider credentials to pass to background triage worker
+    const provider = localStorage.getItem('llm_provider') || 'gemini'
+    const apiKey = localStorage.getItem(`llm_${provider}_api_key`) || ''
+    const model = localStorage.getItem(`llm_${provider}_model`) || ''
+    
+    const azureEndpoint = localStorage.getItem('azure_endpoint') || ''
+    const azureApiVersion = localStorage.getItem('azure_api_version') || '2023-05-15'
+
+    try {
+      const response = await axios.post(
+        `${API_BASE_URL}/regression-testing/runs/all`,
+        {},
+        {
+          headers: {
+            'X-Browser-Headers': browserHeaders,
+            'X-Chrome-Profile': chromeProfile,
+            'X-Visual-Headless': visualHeadless,
+            'X-LLM-Provider': provider,
+            'X-LLM-Model': model,
+            'X-LLM-API-Key': apiKey,
+            'X-Azure-Endpoint': azureEndpoint,
+            'X-Azure-API-Version': azureApiVersion
+          }
+        }
+      )
+      alert(response.data.message)
+    } catch (err) {
+      alert(`Global comparison suite failed: ${err.response?.data?.detail || err.message}`)
+    } finally {
+      setTesting(false)
+    }
+  }
+
+  const handleRunTriage = async (resultId) => {
+    setTriageLoading(true)
+    setTriageReport(null)
+
+    const provider = localStorage.getItem('llm_provider') || 'gemini'
+    
+    // Symmetrical Key Resolver: Dynamically load isolated key matching your actual Settings schema!
+    const apiKey = localStorage.getItem(`llm_${provider}_api_key`) || ''
+    const model = localStorage.getItem(`llm_${provider}_model`) || ''
+
+    // Load Azure-specific settings (if using Azure OpenAI)
+    const azureEndpoint = localStorage.getItem('azure_endpoint') || ''
+    const azureApiVersion = localStorage.getItem('azure_api_version') || '2023-05-15'
+
+    try {
+      const response = await axios.post(
+        `${API_BASE_URL}/regression-testing/results/${resultId}/triage`,
+        {},
+        {
+          headers: {
+            'X-LLM-Provider': provider,
+            'X-LLM-Model': model,
+            'X-LLM-API-Key': apiKey,
+            'X-Azure-Endpoint': azureEndpoint,
+            'X-Azure-API-Version': azureApiVersion
+          }
+        }
+      )
+      setTriageReport(response.data)
+    } catch (err) {
+      alert(`AI Visual Triage failed: ${err.response?.data?.detail || err.message}`)
+    } finally {
+      setTriageLoading(false)
     }
   }
 
@@ -177,20 +279,7 @@ function RegressionModule() {
   return (
     <div className="grid grid-cols-12 gap-8 animate-fadeIn">
       {/* Sidebar: Baselines list */}
-      <div className="col-span-4 bg-white dark:bg-gray-900 border border-slate-200 dark:border-slate-200 dark:border-gray-800 shadow-sm transition-all rounded-2xl p-6 h-fit space-y-6">
-        <div className="flex items-center justify-between border-b border-slate-200 dark:border-gray-800 pb-4">
-          <h3 className="font-bold text-slate-800 dark:text-white text-base flex items-center gap-2">
-            <Eye size={18} className="text-indigo-400" />
-            <span>Visual Baselines</span>
-          </h3>
-          <button
-            onClick={fetchBaselines}
-            className="text-slate-400 dark:text-gray-500 hover:text-slate-600 dark:text-gray-300 transition-colors"
-          >
-            <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
-          </button>
-        </div>
-
+      <div className="col-span-4 bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-800 shadow-sm transition-all rounded-2xl p-6 h-fit space-y-6">
         {/* Create Baseline Form */}
         <form onSubmit={handleCreateBaseline} className="space-y-4 bg-slate-50 dark:bg-gray-950 p-4 border border-slate-200 dark:border-gray-800/60 rounded-xl">
           <p className="text-xs font-bold uppercase tracking-wider text-indigo-400">Establish New Base</p>
@@ -219,10 +308,20 @@ function RegressionModule() {
             disabled={loading || testing}
             className="w-full bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold py-2.5 rounded-lg flex items-center justify-center gap-1.5 active:scale-[0.98] transition-all disabled:opacity-50 disabled:pointer-events-none"
           >
-            <Plus size={14} />
+            {loading ? <RefreshCw size={14} className="animate-spin text-white" /> : <Plus size={14} />}
             <span>{loading ? 'Capturing Base...' : 'Capture Baseline'}</span>
           </button>
         </form>
+
+        {/* Dynamic Baseline Progress Status Banner */}
+        {loading && (
+          <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-xl p-3.5 flex items-center gap-3 animate-pulse select-none">
+            <RefreshCw size={14} className="animate-spin text-indigo-400" />
+            <span className="text-[10px] font-mono text-indigo-400 leading-normal">
+              Capturing desktop, tablet, and mobile visual viewports. Please wait...
+            </span>
+          </div>
+        )}
 
         {/* Baselines listing */}
         <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
@@ -263,6 +362,18 @@ function RegressionModule() {
               <div className="flex items-center justify-between border-b border-slate-200 dark:border-gray-800/60 pb-3 select-none">
                 <h3 className="font-bold text-base text-white">🔍 Compare Base of "{activeBaseline.name}"</h3>
                 <div className="flex items-center gap-3">
+                  {/* Global Regression Suite Trigger Button */}
+                  <button
+                    type="button"
+                    onClick={handleRunAllRegressions}
+                    disabled={loading || testing || baselines.length === 0}
+                    className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white px-3.5 py-1.5 rounded-lg font-bold text-xs flex items-center gap-1.5 transition-all shadow-md active:scale-[0.96]"
+                    title="Triggers parallel visual regression comparisons for ALL established baselines in the background!"
+                  >
+                    <Play size={12} className={testing ? "animate-pulse" : ""} />
+                    <span>{testing ? 'Executing Suite...' : 'Run All Regression Tests'}</span>
+                  </button>
+
                   {/* Re-capture Button */}
                   <button
                     onClick={handleRecaptureBaseline}
@@ -348,29 +459,39 @@ function RegressionModule() {
                         </span>
                       </div>
 
-                      {/* View image comparison actions */}
-                      <div className="grid grid-cols-3 gap-2 text-center text-xs font-semibold">
+                      {/* View image comparison actions (2x2 Balanced Grid!) */}
+                      <div className="grid grid-cols-2 gap-2 text-center text-xs font-semibold select-none">
                         <button
                           onClick={() => setActiveModalImg(`${STATIC_URL}/${res.baseline_image_path}`)}
-                          className="bg-white dark:bg-gray-900 border border-slate-200 dark:border-slate-200 dark:border-gray-800 shadow-sm transition-all hover:border-indigo-500/30 p-2.5 rounded-lg text-slate-500 dark:text-gray-400 hover:text-slate-700 dark:text-gray-200 transition-all flex flex-col items-center gap-1"
+                          className="bg-white dark:bg-gray-900 border border-slate-200 dark:border-slate-200 dark:border-gray-800 shadow-sm transition-all hover:border-indigo-500/30 p-2 rounded-lg text-slate-500 dark:text-gray-400 hover:text-slate-700 dark:text-gray-200 transition-all flex items-center justify-center gap-1.5"
                         >
-                          <ImageIcon size={14} />
-                          <span>Base</span>
+                          <ImageIcon size={13} />
+                          <span>Baseline</span>
                         </button>
                         <button
                           onClick={() => setActiveModalImg(`${STATIC_URL}/${res.run_image_path}`)}
-                          className="bg-white dark:bg-gray-900 border border-slate-200 dark:border-slate-200 dark:border-gray-800 shadow-sm transition-all hover:border-indigo-500/30 p-2.5 rounded-lg text-slate-500 dark:text-gray-400 hover:text-slate-700 dark:text-gray-200 transition-all flex flex-col items-center gap-1"
+                          className="bg-white dark:bg-gray-900 border border-slate-200 dark:border-slate-200 dark:border-gray-800 shadow-sm transition-all hover:border-indigo-500/30 p-2 rounded-lg text-slate-500 dark:text-gray-400 hover:text-slate-700 dark:text-gray-200 transition-all flex items-center justify-center gap-1.5"
                         >
-                          <ImageIcon size={14} />
-                          <span>Run</span>
+                          <ImageIcon size={13} />
+                          <span>Actual Run</span>
                         </button>
                         <button
                           onClick={() => setActiveModalImg(`${STATIC_URL}/${res.diff_image_path}`)}
-                          className="bg-white dark:bg-gray-900 border border-slate-200 dark:border-slate-200 dark:border-gray-800 shadow-sm transition-all hover:border-indigo-500/30 p-2.5 rounded-lg text-slate-500 dark:text-gray-400 hover:text-slate-700 dark:text-gray-200 transition-all flex flex-col items-center gap-1"
+                          className="bg-white dark:bg-gray-900 border border-slate-200 dark:border-slate-200 dark:border-gray-800 shadow-sm transition-all hover:border-indigo-500/30 p-2 rounded-lg text-slate-500 dark:text-gray-400 hover:text-slate-700 dark:text-gray-200 transition-all flex items-center justify-center gap-1.5"
                           disabled={!res.diff_image_path}
                         >
-                          <ImageIcon size={14} className="text-rose-400" />
+                          <ImageIcon size={13} className="text-rose-400" />
                           <span className="text-rose-400">Diff Map</span>
+                        </button>
+                        
+                        {/* New: Global AI Visual Triage Analysis Button! */}
+                        <button
+                          onClick={() => handleRunTriage(res.id)}
+                          className="bg-white dark:bg-gray-900 border border-slate-200 dark:border-slate-200 dark:border-gray-800 shadow-sm transition-all hover:border-indigo-500/30 p-2 rounded-lg text-indigo-500 dark:text-indigo-400 hover:text-indigo-600 dark:hover:text-indigo-300 transition-all flex items-center justify-center gap-1.5"
+                          title="Run dynamic, written AI Visual Triage on these layout mismatches"
+                        >
+                          <Sparkles size={13} />
+                          <span>AI Triage</span>
                         </button>
                       </div>
                     </div>
@@ -423,6 +544,58 @@ function RegressionModule() {
               alt="Visual inspect zoom"
               className="max-w-full max-h-[80vh] object-contain rounded-md"
             />
+          </div>
+        </div>
+      )}
+
+      {/* AI Triage Lightbox Modal */}
+      {(triageLoading || triageReport) && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-6 animate-fadeIn">
+          <div className="relative w-full max-w-2xl bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-800 rounded-2xl shadow-2xl p-8 max-h-[85vh] overflow-y-auto space-y-6">
+            
+            <div className="border-b border-slate-200 dark:border-gray-800 pb-4 flex items-center justify-between">
+              <h3 className="font-bold text-lg text-slate-800 dark:text-white flex items-center gap-2">
+                <Sparkles className="text-indigo-500 animate-pulse" size={20} />
+                <span>AI Visual Triage Analysis ({triageReport?.viewport || 'Analyzing...'} Viewport)</span>
+              </h3>
+              <button 
+                onClick={() => { setTriageReport(null); setTriageLoading(false); }}
+                className="text-slate-400 dark:text-gray-500 hover:text-slate-600 dark:hover:text-gray-300 text-xs font-bold px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-gray-800 transition-colors"
+              >
+                Close
+              </button>
+            </div>
+
+            {triageLoading ? (
+              <div className="flex flex-col items-center justify-center py-12 space-y-4 animate-fadeIn animate-pulse">
+                <RefreshCw className="text-indigo-500 animate-spin" size={32} />
+                <p className="text-xs text-slate-500 dark:text-gray-400 font-mono">Comparing visual layout matrices & drafting triage report (takes ~5 seconds)...</p>
+              </div>
+            ) : (
+              <div className="space-y-4 animate-fadeIn">
+                <div className="p-4 bg-indigo-500/5 border border-indigo-500/15 rounded-xl flex items-center justify-between text-xs font-mono">
+                  <span className="text-slate-500">Similarity Score:</span>
+                  <span className="text-indigo-500 dark:text-indigo-400 font-bold">{triageReport?.similarity_score}% Match</span>
+                </div>
+                
+                {/* Render markdown formatted text inside a beautiful code-style box */}
+                <div className="bg-slate-50 dark:bg-gray-950 border border-slate-200 dark:border-gray-850 p-6 rounded-xl font-sans text-xs text-slate-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap select-text h-[350px] overflow-y-auto shadow-inner">
+                  {triageReport?.analysis}
+                </div>
+                
+                <div className="flex justify-end pt-2">
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(triageReport?.analysis || '')
+                      alert("Visual Triage Report successfully copied to clipboard! ✅")
+                    }}
+                    className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs px-5 py-2.5 rounded-xl flex items-center gap-1.5 transition-all shadow-lg active:scale-[0.96]"
+                  >
+                    <span>Copy to Clipboard</span>
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}

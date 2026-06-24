@@ -67,6 +67,9 @@ function Settings() {
 
   const [saved, setSaved] = useState(false)
 
+  // Visual Headless toggle configuration state
+  const [visualHeadless, setVisualHeadless] = useState(true)
+
   // Test connection states
   const [testingConn, setTestingConn] = useState(false)
   const [connStatus, setConnStatus] = useState(null)
@@ -150,6 +153,9 @@ function Settings() {
 
     setGitlabProjectId(localStorage.getItem('gitlab_project_id') || '')
     setGitlabPat(localStorage.getItem('gitlab_pat') || '')
+
+    // Load dynamic visual headless mode preference
+    setVisualHeadless(localStorage.getItem('visual_headless') !== 'false')
 
     // Load individual provider Keys and Models to prevent any key-spillovers!
     setGeminiKey(localStorage.getItem('llm_gemini_api_key') || '')
@@ -307,6 +313,7 @@ function Settings() {
 
     localStorage.setItem('browser_headers', browserHeaders.trim())
     localStorage.setItem('chrome_profile', chromeProfile.trim())
+    localStorage.setItem('visual_headless', visualHeadless ? 'true' : 'false') // Persist your dynamic visual headless preference!
     
     localStorage.setItem('bug_export_target', bugExportTarget)
 
@@ -610,6 +617,22 @@ function Settings() {
                 />
                 <p className="text-[10px] text-slate-400 dark:text-gray-500 leading-normal">
                   * Bypasses strict Microsoft/Okta SSO login walls entirely by launching Playwright using your active, authenticated manual Microsoft Edge or Google Chrome session profile directory.
+                </p>
+              </div>
+
+              {/* NEW: DYNAMIC VISUAL HEADLESS MODE SELECTOR */}
+              <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-gray-850">
+                <label className="text-sm font-semibold text-slate-700 dark:text-gray-300">Run Visual Testing Headless</label>
+                <select
+                  value={visualHeadless ? 'true' : 'false'}
+                  onChange={(e) => setVisualHeadless(e.target.value === 'true')}
+                  className="w-full bg-slate-50 dark:bg-gray-950 border border-slate-200 dark:border-gray-800 rounded-xl px-4 py-3.5 text-sm text-slate-800 dark:text-gray-200 focus:outline-none focus:border-indigo-500 transition-colors cursor-pointer"
+                >
+                  <option value="true">Enable Headless Mode (Background - Fast)</option>
+                  <option value="false">Disable Headless Mode (Headful Window - Required for local Chrome Cookie Bypasses!)</option>
+                </select>
+                <p className="text-[10px] text-slate-400 dark:text-gray-500 leading-normal">
+                  * Headless must be **Disabled (False)** if you are using your local Google Chrome profile to successfully read saved Okta cookies.
                 </p>
               </div>
             </div>

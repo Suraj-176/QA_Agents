@@ -143,7 +143,14 @@ def extract_universal_access_token(
 async def run_regression_test_with_error_handling(
     run_id: int,
     db: Session,
-    access_token: Optional[str] = None
+    access_token: Optional[str] = None,
+    chrome_profile_path: Optional[str] = None,
+    headless_mode: bool = True,
+    llm_provider: Optional[str] = None,
+    llm_model: Optional[str] = None,
+    llm_api_key: Optional[str] = None,
+    azure_endpoint: Optional[str] = None,
+    azure_api_version: Optional[str] = None
 ):
     """Executes comparison screenshots with complete error boundary isolation"""
     try:
@@ -151,7 +158,14 @@ async def run_regression_test_with_error_handling(
         await regression_service.run_regression_test(
             run_id=run_id,
             db=db,
-            access_token=access_token
+            access_token=access_token,
+            chrome_profile_path=chrome_profile_path,
+            headless_mode=headless_mode,
+            llm_provider=llm_provider,
+            llm_model=llm_model,
+            llm_api_key=llm_api_key,
+            azure_endpoint=azure_endpoint,
+            azure_api_version=azure_api_version
         )
     except Exception as e:
         logger.error(f"Failed to execute background comparison run {run_id}: {str(e)}", exc_info=True)
@@ -179,6 +193,8 @@ async def run_regression_test_with_error_handling(
 async def create_baseline(
     payload: BaselineCreateRequest,
     access_token: Optional[str] = Depends(extract_universal_access_token),
+    x_chrome_profile: Optional[str] = Header(None, alias="X-Chrome-Profile"),
+    x_visual_headless: Optional[str] = Header("true", alias="X-Visual-Headless"),
     db: Session = Depends(get_db)
 ):
     """
@@ -187,11 +203,14 @@ async def create_baseline(
     """
     try:
         logger.info(f"Creating visual baseline benchmarks for '{payload.name}' at {payload.url} ...")
+        headless_mode = (x_visual_headless != "false")
         result = await regression_service.setup_baseline(
             name=payload.name,
             url=str(payload.url),
             db=db,
-            access_token=access_token
+            access_token=access_token,
+            chrome_profile_path=x_chrome_profile,
+            headless_mode=headless_mode
         )
         logger.info(f"✓ Baseline created successfully: ID {result.get('baseline_id')}")
         return result
@@ -224,6 +243,73 @@ async def list_baselines(db: Session = Depends(get_db)):
 
 
 @router.post(
+    "/runs/all",
+    response_model=Dict[str, Any],
+    status_code=status.HTTP_202_ACCEPTED,
+    summary="Trigger a global parallel visual regression test on all baselines"
+)
+async def run_all_regressions(
+    background_tasks: BackgroundTasks,
+    access_token: Optional[str] = Depends(extract_universal_access_token),
+    x_chrome_profile: Optional[str] = Header(None, alias="X-Chrome-Profile"),
+    x_visual_headless: Optional[str] = Header("true", alias="X-Visual-Headless"),
+    x_llm_provider: Optional[str] = Header("gemini", alias="X-LLM-Provider"),
+    x_llm_model: Optional[str] = Header("gemini-1.5-flash", alias="X-LLM-Model"),
+    x_llm_api_key: Optional[str] = Header(None, alias="X-LLM-API-Key"),
+    x_azure_endpoint: Optional[str] = Header(None, alias="X-Azure-Endpoint"),
+    x_azure_api_version: Optional[str] = Header(None, alias="X-Azure-API-Version"),
+    db: Session = Depends(get_db)
+):
+    """
+    Launches an automated global visual regression sweep!
+    Automatically loops through all baselines, enqueues parallel comparisons in the background,
+    and returns a summary of scheduled runs instantly!
+    """
+    baselines = db.query(Baseline).all()
+    if not baselines:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No visual baselines established yet. Please create baselines first."
+        )
+        
+    headless_mode = (x_visual_headless != "false")
+    scheduled_runs = []
+    
+    for baseline in baselines:
+        # Create a pending run for each baseline using its original URL as comparison target (or staging override)
+        run = RegressionTestRun(
+            baseline_id=baseline.id,
+            target_url=baseline.url,
+            status="pending"
+        )
+        db.add(run)
+        db.commit()
+        
+        # Enqueue to background tasks list with complete pre-populated LLM variables!
+        background_tasks.add_task(
+            run_regression_test_with_error_handling,
+            run_id=run.id,
+            db=db,
+            access_token=access_token,
+            chrome_profile_path=x_chrome_profile,
+            headless_mode=headless_mode,
+            llm_provider=x_llm_provider,
+            llm_model=x_llm_model,
+            llm_api_key=x_llm_api_key,
+            azure_endpoint=x_azure_endpoint,
+            azure_api_version=x_azure_api_version
+        )
+        scheduled_runs.append({"run_id": run.id, "baseline": baseline.name})
+        
+    return {
+        "status": "pending",
+        "scheduled_count": len(scheduled_runs),
+        "runs": scheduled_runs,
+        "message": f"Successfully triggered parallel visual regressions for all {len(scheduled_runs)} established baselines in the background!"
+    }
+
+
+@router.post(
     "/test",
     response_model=Dict[str, Any],
     status_code=status.HTTP_202_ACCEPTED,
@@ -233,6 +319,13 @@ async def run_regression_test(
     payload: TestRunRequest,
     background_tasks: BackgroundTasks,
     access_token: Optional[str] = Depends(extract_universal_access_token),
+    x_chrome_profile: Optional[str] = Header(None, alias="X-Chrome-Profile"),
+    x_visual_headless: Optional[str] = Header("true", alias="X-Visual-Headless"),
+    x_llm_provider: Optional[str] = Header("gemini", alias="X-LLM-Provider"),
+    x_llm_model: Optional[str] = Header("gemini-1.5-flash", alias="X-LLM-Model"),
+    x_llm_api_key: Optional[str] = Header(None, alias="X-LLM-API-Key"),
+    x_azure_endpoint: Optional[str] = Header(None, alias="X-Azure-Endpoint"),
+    x_azure_api_version: Optional[str] = Header(None, alias="X-Azure-API-Version"),
     db: Session = Depends(get_db)
 ):
     """Trigger a visual regression test. Runs as a non-blocking background task."""
@@ -253,12 +346,21 @@ async def run_regression_test(
     db.add(run)
     db.commit()
 
-    # Enqueue comparison routine on FastAPI's background task queue
+    headless_mode = (x_visual_headless != "false")
+
+    # Enqueue comparison routine on FastAPI's background task queue with LLM details!
     background_tasks.add_task(
         run_regression_test_with_error_handling,
         run_id=run.id,
         db=db,
-        access_token=access_token
+        access_token=access_token,
+        chrome_profile_path=x_chrome_profile,
+        headless_mode=headless_mode,
+        llm_provider=x_llm_provider,
+        llm_model=x_llm_model,
+        llm_api_key=x_llm_api_key,
+        azure_endpoint=x_azure_endpoint,
+        azure_api_version=x_azure_api_version
     )
 
     logger.info(f"Scheduled visual regression comparison run {run.id}")
@@ -267,6 +369,72 @@ async def run_regression_test(
         "status": "pending",
         "message": "Visual regression comparison job successfully scheduled and running in background."
     }
+
+
+@router.post("/results/{result_id}/triage")
+async def triage_visual_result(
+    result_id: int,
+    x_llm_provider: Optional[str] = Header("gemini", alias="X-LLM-Provider"),
+    x_llm_model: Optional[str] = Header("gemini-1.5-flash", alias="X-LLM-Model"),
+    x_llm_api_key: Optional[str] = Header(None, alias="X-LLM-API-Key"),
+    x_azure_endpoint: Optional[str] = Header(None, alias="X-Azure-Endpoint"),
+    x_azure_api_version: Optional[str] = Header(None, alias="X-Azure-API-Version"),
+    db: Session = Depends(get_db)
+):
+    """
+    Loads the OpenCV diff image and run image, and pipes them to Gemini Vision!
+    Returns a rich, professional, written triage analysis detailing exactly what layout,
+    alignment, color, or styling shifts occurred.
+    """
+    if not x_llm_api_key:
+        raise HTTPException(status_code=400, detail="LLM API Key is missing in headers. Please check your settings.")
+        
+    result = db.query(RegressionTestResult).filter(RegressionTestResult.id == result_id).first()
+    if not result:
+        raise HTTPException(status_code=404, detail="Comparison result not found.")
+        
+    # Prioritize the OpenCV diff image as it highlights mismatches in red!
+    img_path = result.diff_image_path if result.diff_image_path else result.run_image_path
+    full_img_path = os.path.join(regression_service.static_dir, img_path)
+    
+    if not os.path.exists(full_img_path):
+        raise HTTPException(status_code=404, detail="Visual screenshot file is missing from disk.")
+        
+    # Load prompt template
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    prompt_path = os.path.join(base_dir, "prompts", "VisualTriagePrompt.txt")
+    try:
+        with open(prompt_path, "r", encoding="utf-8") as f:
+            prompt_template = f.read().strip()
+    except Exception:
+        prompt_template = "Compare the baseline and run screenshot images and describe any visual errors."
+        
+    # Read image binary bytes
+    with open(full_img_path, "rb") as image_file:
+        image_bytes = image_file.read()
+        
+    try:
+        from app.services.llm_adapter import LLMAdapter
+        # Execute multimodal vision query!
+        analysis_report = await LLMAdapter.analyze_image(
+            provider=x_llm_provider,
+            model=x_llm_model,
+            api_key=x_llm_api_key,
+            prompt=prompt_template,
+            image_bytes=image_bytes,
+            azure_endpoint=x_azure_endpoint,
+            azure_api_version=x_azure_api_version
+        )
+        return {
+            "result_id": result_id,
+            "viewport": result.viewport,
+            "similarity_score": result.similarity_score,
+            "analysis": analysis_report
+        }
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Visual AI Triage failed: {str(e)}")
 
 
 @router.get(
@@ -317,14 +485,19 @@ async def delete_baseline(baseline_id: int, db: Session = Depends(get_db)):
 async def recapture_baseline(
     baseline_id: int,
     access_token: Optional[str] = Depends(extract_universal_access_token),
+    x_chrome_profile: Optional[str] = Header(None, alias="X-Chrome-Profile"),
+    x_visual_headless: Optional[str] = Header("true", alias="X-Visual-Headless"),
     db: Session = Depends(get_db)
 ):
     """Re-capture and overwrite the visual viewport benchmarks for an established baseline URL."""
     try:
+        headless_mode = (x_visual_headless != "false")
         result = await regression_service.recapture_baseline(
             baseline_id=baseline_id,
             db=db,
-            access_token=access_token
+            access_token=access_token,
+            chrome_profile_path=x_chrome_profile,
+            headless_mode=headless_mode
         )
         logger.info(f"Successfully recaptured baseline {baseline_id}")
         return result

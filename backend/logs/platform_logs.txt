@@ -992,3 +992,126 @@ Traceback (most recent call last):
 openai.APIConnectionError: Connection error.
 
 ====================================================================
+
+====================================================================
+⏰ TIMESTAMP: 2026-06-23 18:19:49
+📝 MESSAGE: LLM Connection Test initiated. Provider: ANTHROPIC, Model: 'claude-opus-4-7', Endpoint: 'N/A'
+====================================================================
+
+====================================================================
+⏰ TIMESTAMP: 2026-06-23 18:19:51
+📝 MESSAGE: LLM Connection Test FAILED for ANTHROPIC: Error code: 401 - {'type': 'error', 'error': {'type': 'authentication_error', 'message': 'invalid x-api-key'}, 'request_id': 'req_011CcLDghHgrQhGf96mATA3G'}
+--------------------------------------------------------------------
+🚨 EXCEPTION TRACEBACK:
+Traceback (most recent call last):
+  File "C:\QAAgents\backend\app\main.py", line 89, in test_llm_connection
+    response = await LLMAdapter.generate_text(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\QAAgents\backend\app\services\llm_adapter.py", line 151, in generate_text
+    response = await client.messages.create(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\QAAgents\backend\venv\Lib\site-packages\anthropic\resources\messages\messages.py", line 2463, in create
+    return await self._post(
+           ^^^^^^^^^^^^^^^^^
+  File "C:\QAAgents\backend\venv\Lib\site-packages\anthropic\_base_client.py", line 2275, in post
+    return await self.request(cast_to, opts, stream=stream, stream_cls=stream_cls)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\QAAgents\backend\venv\Lib\site-packages\anthropic\_base_client.py", line 1940, in request
+    raise self._make_status_error_from_response(response) from None
+anthropic.AuthenticationError: Error code: 401 - {'type': 'error', 'error': {'type': 'authentication_error', 'message': 'invalid x-api-key'}, 'request_id': 'req_011CcLDghHgrQhGf96mATA3G'}
+
+====================================================================
+
+====================================================================
+⏰ TIMESTAMP: 2026-06-23 18:26:28
+📝 MESSAGE: LLM Connection Test initiated. Provider: ANTHROPIC, Model: 'claude-opus-4-7', Endpoint: 'N/A'
+====================================================================
+
+====================================================================
+⏰ TIMESTAMP: 2026-06-23 18:26:29
+📝 MESSAGE: LLM Connection Test FAILED for ANTHROPIC: Error code: 401 - {'type': 'error', 'error': {'type': 'authentication_error', 'message': 'invalid x-api-key'}, 'request_id': 'req_011CcLEC3uyUDEUxcB8pfVGE'}
+--------------------------------------------------------------------
+🚨 EXCEPTION TRACEBACK:
+Traceback (most recent call last):
+  File "C:\QAAgents\backend\app\main.py", line 89, in test_llm_connection
+    response = await LLMAdapter.generate_text(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\QAAgents\backend\app\services\llm_adapter.py", line 151, in generate_text
+    response = await client.messages.create(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\QAAgents\backend\venv\Lib\site-packages\anthropic\resources\messages\messages.py", line 2463, in create
+    return await self._post(
+           ^^^^^^^^^^^^^^^^^
+  File "C:\QAAgents\backend\venv\Lib\site-packages\anthropic\_base_client.py", line 2275, in post
+    return await self.request(cast_to, opts, stream=stream, stream_cls=stream_cls)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\QAAgents\backend\venv\Lib\site-packages\anthropic\_base_client.py", line 1940, in request
+    raise self._make_status_error_from_response(response) from None
+anthropic.AuthenticationError: Error code: 401 - {'type': 'error', 'error': {'type': 'authentication_error', 'message': 'invalid x-api-key'}, 'request_id': 'req_011CcLEC3uyUDEUxcB8pfVGE'}
+
+====================================================================
+
+====================================================================
+⏰ TIMESTAMP: 2026-06-24 11:17:40
+📝 MESSAGE: LLM Connection Test initiated. Provider: GROQ, Model: 'llama-3.3-70b-versatile', Endpoint: 'N/A'
+====================================================================
+
+====================================================================
+⏰ TIMESTAMP: 2026-06-24 11:17:43
+📝 MESSAGE: LLM Connection Test SUCCESS. Connected to GROQ!
+====================================================================
+
+====================================================================
+⏰ TIMESTAMP: 2026-06-24 11:18:16
+📝 MESSAGE: Initiated framework scaffolding. Tool: Playwright, Language: TypeScript, Pattern: BDD (Cucumber / Gherkin), Destination: C:/New folder
+====================================================================
+
+====================================================================
+⏰ TIMESTAMP: 2026-06-24 11:23:13
+📝 MESSAGE: Initiated file generation extender. Folder: C:/New folder, Instruction: 'Create a new DemoLogin Page with all its locators and required methods'
+====================================================================
+
+====================================================================
+⏰ TIMESTAMP: 2026-06-24 11:23:55
+📝 MESSAGE: Initiated file write operation. Folder: C:/New folder, Destination Path: 'src/pages/demoLoginPage.ts'
+====================================================================
+
+====================================================================
+⏰ TIMESTAMP: 2026-06-24 11:55:35
+📝 MESSAGE: LLM Connection Test initiated. Provider: GEMINI, Model: 'gemini-2.5-flash', Endpoint: 'N/A'
+====================================================================
+
+====================================================================
+⏰ TIMESTAMP: 2026-06-24 11:55:36
+📝 MESSAGE: LLM Connection Test SUCCESS. Connected to GEMINI!
+====================================================================
+
+====================================================================
+⏰ TIMESTAMP: 2026-06-24 12:05:23
+📝 MESSAGE: LLM Connection Test initiated. Provider: GEMINI, Model: 'gemini-2.5-flash', Endpoint: 'N/A'
+====================================================================
+
+====================================================================
+⏰ TIMESTAMP: 2026-06-24 12:05:25
+📝 MESSAGE: LLM Connection Test SUCCESS. Connected to GEMINI!
+====================================================================
+
+====================================================================
+⏰ TIMESTAMP: 2026-06-24 12:05:47
+📝 MESSAGE: LLM Connection Test initiated. Provider: GEMINI, Model: 'gemini-2.5-flash', Endpoint: 'N/A'
+====================================================================
+
+====================================================================
+⏰ TIMESTAMP: 2026-06-24 12:05:48
+📝 MESSAGE: LLM Connection Test SUCCESS. Connected to GEMINI!
+====================================================================
+
+====================================================================
+⏰ TIMESTAMP: 2026-06-24 13:03:56
+📝 MESSAGE: LLM Connection Test initiated. Provider: GEMINI, Model: 'gemini-2.5-flash', Endpoint: 'N/A'
+====================================================================
+
+====================================================================
+⏰ TIMESTAMP: 2026-06-24 13:03:58
+📝 MESSAGE: LLM Connection Test SUCCESS. Connected to GEMINI!
+====================================================================
