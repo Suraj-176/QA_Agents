@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import axios from 'axios'
-import { Code2, Settings, Plus, Play, Download, FolderOpen, Save, RefreshCw, FileCode, CheckCircle, AlertCircle, Loader } from 'lucide-react'
+import { Code2, Settings, Plus, Play, Download, FolderOpen, Save, RefreshCw, FileCode, CheckCircle, AlertCircle, Loader, HelpCircle } from 'lucide-react'
 
 const API_BASE_URL = 'http://127.0.0.1:5000/api'
 const STATIC_URL = 'http://127.0.0.1:5000/static'
@@ -10,6 +10,10 @@ function AutomationModule() {
   const [loading, setLoading] = useState(false)
   const [progress, setProgress] = useState(0)
   const [progressMsg, setProgressMessage] = useState('')
+
+  // Symmetrical dynamic guide states
+  const [showGuide, setShowGuide] = useState(false)
+  const [guideContent, setGuideContent] = useState('')
 
   // Sub-Tab 1: Bootstrap Form states
   const [bootTool, setBootTool] = useState('Playwright')
@@ -171,6 +175,18 @@ function AutomationModule() {
     }
   }
 
+  // Symmetrical dynamic guide handler
+  const handleOpenGuide = async () => {
+    setShowGuide(true)
+    setGuideContent('Loading step-by-step user guide from disk...')
+    try {
+      const response = await axios.get(`${STATIC_URL}/guides/AutomationGuide.md`)
+      setGuideContent(response.data)
+    } catch (err) {
+      setGuideContent('### ❌ Failed to load guide file from static storage on server disk. Please check your folder structure.')
+    }
+  }
+
   return (
     <div className="space-y-8 animate-fadeIn select-none text-slate-800 dark:text-white">
       {/* Sub-Tab Selector Header */}
@@ -208,11 +224,23 @@ function AutomationModule() {
         <div className="grid grid-cols-12 gap-8">
           {/* Form left */}
           <div className="col-span-5 bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-800 rounded-2xl p-6 h-fit space-y-6 shadow-sm transition-all">
-            <div className="border-b border-slate-200 dark:border-gray-800 pb-3">
-              <h3 className="font-bold text-slate-800 dark:text-white text-base">🏗️ Configure Scaffolder</h3>
-              <p className="text-[10px] text-slate-500 dark:text-gray-450 mt-1 leading-normal">
-                Choose your environment. Provide a local directory path to scaffold on disk, or leave it blank to download as a structured ZIP!
-              </p>
+            <div className="border-b border-slate-200 dark:border-gray-800 pb-3 flex items-center justify-between">
+              <div>
+                <h3 className="font-bold text-slate-800 dark:text-white text-base">🏗️ Configure Scaffolder</h3>
+                <p className="text-[10px] text-slate-500 dark:text-gray-450 mt-1 leading-normal">
+                  Choose your environment. Provide a local directory path to scaffold on disk, or leave it blank to download as a structured ZIP!
+                </p>
+              </div>
+              {/* Guide Button */}
+              <button
+                type="button"
+                onClick={handleOpenGuide}
+                className="text-slate-400 hover:text-indigo-500 transition-colors flex items-center gap-1 text-[10px] font-bold shrink-0 self-start"
+                title="Open non-technical step-by-step User Guide for this Agent"
+              >
+                <HelpCircle size={14} />
+                <span>User Guide</span>
+              </button>
             </div>
 
             <form onSubmit={handleBootstrap} className="space-y-5">
@@ -386,7 +414,19 @@ function AutomationModule() {
         <div className="grid grid-cols-12 gap-8">
           {/* Instructions left */}
           <div className="col-span-5 bg-white dark:bg-gray-900 border border-slate-200 dark:border-slate-200 dark:border-gray-800 shadow-sm transition-all rounded-2xl p-6 h-fit space-y-6">
-            <h3 className="font-bold text-slate-800 dark:text-white text-base border-b border-slate-200 dark:border-gray-800 pb-3">🔧 Extend Local Repo</h3>
+            <div className="border-b border-slate-200 dark:border-gray-800 pb-3 flex items-center justify-between">
+              <h3 className="font-bold text-slate-800 dark:text-white text-base">🔧 Extend Local Repo</h3>
+              {/* Guide Button */}
+              <button
+                type="button"
+                onClick={handleOpenGuide}
+                className="text-slate-400 hover:text-indigo-500 transition-colors flex items-center gap-1 text-[10px] font-bold shrink-0"
+                title="Open non-technical step-by-step User Guide for this Agent"
+              >
+                <HelpCircle size={14} />
+                <span>User Guide</span>
+              </button>
+            </div>
             
             <form onSubmit={handleGenerateFile} className="space-y-5">
               {/* Folder path input with Graphical Browse Folder Button */}
@@ -562,6 +602,31 @@ function AutomationModule() {
                 <p className="text-xs text-slate-400 dark:text-gray-500 max-w-sm mx-auto mt-1 leading-relaxed font-medium">Input your existing local framework path and file description instructions on the left panel, then hit generate to inspect. Your generated scripts will appear here.</p>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Symmetrical dynamic User Guide Lightbox Modal */}
+      {showGuide && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-6 animate-fadeIn">
+          <div className="relative w-full max-w-2xl bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-800 rounded-2xl shadow-2xl p-8 max-h-[85vh] overflow-y-auto space-y-6">
+            <div className="border-b border-slate-200 dark:border-gray-800 pb-4 flex items-center justify-between">
+              <h3 className="font-bold text-lg text-slate-800 dark:text-white flex items-center gap-2">
+                <HelpCircle className="text-indigo-500 animate-pulse" size={20} />
+                <span>AI Automation Architect Agent Guide</span>
+              </h3>
+              <button 
+                onClick={() => setShowGuide(false)}
+                className="text-slate-400 dark:text-gray-500 hover:text-slate-600 dark:hover:text-gray-300 text-xs font-bold px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-gray-800 transition-colors"
+              >
+                Close Guide
+              </button>
+            </div>
+            
+            {/* Scrollable, non-hardcoded markdown text viewport */}
+            <div className="bg-slate-50 dark:bg-gray-950 border border-slate-200 dark:border-gray-850 p-6 rounded-xl font-sans text-xs text-slate-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap select-text h-[400px] overflow-y-auto shadow-inner">
+              {guideContent}
+            </div>
           </div>
         </div>
       )}

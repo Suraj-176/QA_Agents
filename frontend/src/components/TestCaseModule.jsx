@@ -1,14 +1,19 @@
 import React, { useState, useEffect } from 'react'
 import axios from 'axios'
-import { ClipboardList, Play, Trash, ChevronDown, ChevronUp, FileText, CheckCircle2, RefreshCw, Download } from 'lucide-react'
+import { ClipboardList, Play, Trash, ChevronDown, ChevronUp, FileText, CheckCircle2, RefreshCw, Download, HelpCircle } from 'lucide-react'
 
 const API_BASE_URL = 'http://127.0.0.1:5000/api'
+const STATIC_URL = 'http://127.0.0.1:5000/static'
 
 function TestCaseModule() {
   const [suites, setSuites] = useState([])
   const [activeSuite, setActiveSuite] = useState(null)
   const [loading, setLoading] = useState(false)
   const [generating, setGenerating] = useState(false)
+
+  // Symmetrical dynamic guide states
+  const [showGuide, setShowGuide] = useState(false)
+  const [guideContent, setGuideContent] = useState('')
 
   // Input states
   const [reqTitle, setReqTitle] = useState('')
@@ -147,6 +152,18 @@ function TestCaseModule() {
     document.body.removeChild(link)
   }
 
+  // Symmetrical dynamic guide handler
+  const handleOpenGuide = async () => {
+    setShowGuide(true)
+    setGuideContent('Loading step-by-step user guide from disk...')
+    try {
+      const response = await axios.get(`${STATIC_URL}/guides/TestCaseGuide.md`)
+      setGuideContent(response.data)
+    } catch (err) {
+      setGuideContent('### ❌ Failed to load guide file from static storage on server disk. Please check your folder structure.')
+    }
+  }
+
   return (
     <div className="grid grid-cols-12 gap-8 animate-fadeIn">
       {/* Sidebar: Test suites list */}
@@ -160,7 +177,19 @@ function TestCaseModule() {
 
         {/* Requirements form */}
         <form onSubmit={handleGenerate} className="space-y-4 bg-slate-50 dark:bg-gray-950 p-4 border border-slate-200 dark:border-gray-800/60 rounded-xl">
-          <p className="text-xs font-bold uppercase tracking-wider text-indigo-400">Generate Suite</p>
+          <div className="flex items-center justify-between border-b border-slate-200/60 dark:border-gray-800/60 pb-2 mb-2">
+            <p className="text-xs font-bold uppercase tracking-wider text-indigo-400">Generate Suite</p>
+            {/* Guide Button */}
+            <button
+              type="button"
+              onClick={handleOpenGuide}
+              className="text-slate-400 hover:text-indigo-500 transition-colors flex items-center gap-1 text-[10px] font-bold"
+              title="Open non-technical step-by-step User Guide for this Agent"
+            >
+              <HelpCircle size={14} />
+              <span>User Guide</span>
+            </button>
+          </div>
           <div className="space-y-1">
             <input
               type="text"
@@ -345,6 +374,31 @@ function TestCaseModule() {
           </div>
         )}
       </div>
+
+      {/* Symmetrical dynamic User Guide Lightbox Modal */}
+      {showGuide && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-6 animate-fadeIn">
+          <div className="relative w-full max-w-2xl bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-800 rounded-2xl shadow-2xl p-8 max-h-[85vh] overflow-y-auto space-y-6">
+            <div className="border-b border-slate-200 dark:border-gray-800 pb-4 flex items-center justify-between">
+              <h3 className="font-bold text-lg text-slate-800 dark:text-white flex items-center gap-2">
+                <HelpCircle className="text-indigo-500 animate-pulse" size={20} />
+                <span>AI TestCase Generator Agent Guide</span>
+              </h3>
+              <button 
+                onClick={() => setShowGuide(false)}
+                className="text-slate-400 dark:text-gray-500 hover:text-slate-600 dark:hover:text-gray-300 text-xs font-bold px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-gray-800 transition-colors"
+              >
+                Close Guide
+              </button>
+            </div>
+            
+            {/* Scrollable, non-hardcoded markdown text viewport */}
+            <div className="bg-slate-50 dark:bg-gray-950 border border-slate-200 dark:border-gray-850 p-6 rounded-xl font-sans text-xs text-slate-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap select-text h-[400px] overflow-y-auto shadow-inner">
+              {guideContent}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

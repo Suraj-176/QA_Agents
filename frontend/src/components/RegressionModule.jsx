@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import axios from 'axios'
-import { Eye, Play, Plus, RefreshCw, AlertTriangle, CheckCircle, Image as ImageIcon, Trash, ChevronRight, Sparkles } from 'lucide-react'
+import { Eye, Play, Plus, RefreshCw, AlertTriangle, CheckCircle, Image as ImageIcon, Trash, ChevronRight, Sparkles, HelpCircle } from 'lucide-react'
 
 const API_BASE_URL = 'http://127.0.0.1:5000/api'
 const STATIC_URL = 'http://127.0.0.1:5000/static'
@@ -9,6 +9,10 @@ function RegressionModule() {
   const [baselines, setBaselines] = useState([])
   const [loading, setLoading] = useState(false)
   const [activeBaseline, setActiveBaseline] = useState(null)
+
+  // Symmetrical dynamic guide states
+  const [showGuide, setShowGuide] = useState(false)
+  const [guideContent, setGuideContent] = useState('')
 
   // Form states for creating baseline
   const [newApp, setNewApp] = useState('')
@@ -372,13 +376,37 @@ function RegressionModule() {
     const interval = setInterval(checkStatus, 2500)
   }
 
+  // Symmetrical dynamic guide handler
+  const handleOpenGuide = async () => {
+    setShowGuide(true)
+    setGuideContent('Loading step-by-step user guide from disk...')
+    try {
+      const response = await axios.get(`${STATIC_URL}/guides/VisualTestingGuide.md`)
+      setGuideContent(response.data)
+    } catch (err) {
+      setGuideContent('### ❌ Failed to load guide file from static storage on server disk. Please check your folder structure.')
+    }
+  }
+
   return (
     <div className="grid grid-cols-12 gap-8 animate-fadeIn">
       {/* Sidebar: Baselines list */}
       <div className="col-span-4 bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-800 shadow-sm transition-all rounded-2xl p-6 h-fit space-y-6">
         {/* Create Baseline Form */}
         <form onSubmit={handleCreateBaseline} className="space-y-3 bg-slate-50 dark:bg-gray-950 p-4 border border-slate-200 dark:border-gray-800/60 rounded-xl">
-          <p className="text-xs font-bold uppercase tracking-wider text-indigo-400">Establish New Base</p>
+          <div className="flex items-center justify-between border-b border-slate-200/60 dark:border-gray-800/60 pb-2 mb-2">
+            <p className="text-xs font-bold uppercase tracking-wider text-indigo-400">Establish New Base</p>
+            {/* Guide Button - High-Visibility Glowing Pill */}
+            <button
+              type="button"
+              onClick={handleOpenGuide}
+              className="bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/20 text-indigo-500 dark:text-indigo-400 transition-all flex items-center gap-1 text-[10px] font-extrabold px-2.5 py-1 rounded-lg shadow-sm active:scale-[0.95]"
+              title="Open non-technical step-by-step User Guide for this Agent"
+            >
+              <HelpCircle size={12} />
+              <span>User Guide</span>
+            </button>
+          </div>
           <div className="space-y-1">
             <input
               type="text"
@@ -738,6 +766,31 @@ function RegressionModule() {
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Symmetrical dynamic User Guide Lightbox Modal */}
+      {showGuide && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-6 animate-fadeIn">
+          <div className="relative w-full max-w-2xl bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-800 rounded-2xl shadow-2xl p-8 max-h-[85vh] overflow-y-auto space-y-6">
+            <div className="border-b border-slate-200 dark:border-gray-800 pb-4 flex items-center justify-between">
+              <h3 className="font-bold text-lg text-slate-800 dark:text-white flex items-center gap-2">
+                <HelpCircle className="text-indigo-500 animate-pulse" size={20} />
+                <span>AI Smart Visual testing Agent Guide</span>
+              </h3>
+              <button 
+                onClick={() => setShowGuide(false)}
+                className="text-slate-400 dark:text-gray-500 hover:text-slate-600 dark:hover:text-gray-300 text-xs font-bold px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-gray-800 transition-colors"
+              >
+                Close Guide
+              </button>
+            </div>
+
+            {/* Scrollable, non-hardcoded markdown text viewport */}
+            <div className="bg-slate-50 dark:bg-gray-950 border border-slate-200 dark:border-gray-850 p-6 rounded-xl font-sans text-xs text-slate-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap select-text h-[400px] overflow-y-auto shadow-inner">
+              {guideContent}
+            </div>
           </div>
         </div>
       )}

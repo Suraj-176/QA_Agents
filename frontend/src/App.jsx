@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
-import { LayoutDashboard, Eye, ClipboardList, Bug, Code2, Settings as SettingsIcon, ScrollText, Sun, Moon, ChevronLeft, ChevronRight } from 'lucide-react'
+import axios from 'axios'
+import { LayoutDashboard, Eye, ClipboardList, Bug, Code2, Settings as SettingsIcon, ScrollText, Sun, Moon, ChevronLeft, ChevronRight, HelpCircle } from 'lucide-react'
 
 // Components
 import Dashboard from './components/Dashboard'
@@ -12,6 +13,10 @@ import AutomationModule from './components/AutomationModule'
 function App() {
   const [activeTab, setActiveTab] = useState('dashboard')
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'dark')
+  
+  // Symmetrical dynamic guide states
+  const [showGuide, setShowGuide] = useState(false)
+  const [guideContent, setGuideContent] = useState('')
   
   // Sidebar collapsible state persisted in local storage
   const [isCollapsed, setIsCollapsed] = useState(localStorage.getItem('sidebar_collapsed') === 'true')
@@ -30,6 +35,35 @@ function App() {
 
   const toggleSidebar = () => {
     setIsCollapsed(!isCollapsed)
+  }
+
+  // Symmetrical Global Dynamic User Guide Handler
+  const handleOpenGuide = async () => {
+    setShowGuide(true)
+    setGuideContent('Loading step-by-step user guide from disk...')
+    
+    let filename = 'VisualTestingGuide.md'
+    if (activeTab === 'testcases') {
+      filename = 'TestCaseGuide.md'
+    } else if (activeTab === 'bugreporter') {
+      filename = 'BugReporterGuide.md'
+    } else if (activeTab === 'automation') {
+      filename = 'AutomationGuide.md'
+    } else if (activeTab === 'settings') {
+      filename = 'ConfigurationGuide.md'
+    } else if (activeTab === 'dashboard') {
+      filename = 'VisualTestingGuide.md' // Fallback
+    } else {
+      setShowGuide(false)
+      return
+    }
+
+    try {
+      const response = await axios.get(`http://127.0.0.1:5000/static/guides/${filename}`)
+      setGuideContent(response.data)
+    } catch (err) {
+      setGuideContent('### ❌ Failed to load guide file from static storage on server disk. Please check your folder structure.')
+    }
   }
 
   return (
@@ -56,7 +90,7 @@ function App() {
 
           {!isCollapsed && (
             <div className="animate-fadeIn">
-              <h1 className="font-bold text-base leading-tight tracking-wide text-slate-900 dark:text-white">QA.AI Platform</h1>
+              <h1 className="font-bold text-base leading-tight tracking-wide text-slate-900 dark:text-white">QA AI Platform</h1>
               <p className="text-[10px] text-indigo-500 dark:text-indigo-400 font-bold tracking-wider uppercase">Smart Testing Suite</p>
             </div>
           )}
@@ -76,12 +110,12 @@ function App() {
             }`}
           >
             <LayoutDashboard size={18} className="shrink-0" />
-            {!isCollapsed && <span className="animate-fadeIn">📊 Dashboard Overview</span>}
+            {!isCollapsed && <span className="animate-fadeIn">Dashboard Overview</span>}
             
             {/* Custom Tailwind hover tooltip when collapsed */}
             {isCollapsed && (
               <span className="absolute left-16 scale-0 group-hover:scale-100 transition-all duration-150 rounded-lg bg-gray-900 border border-gray-800 p-2.5 text-xs text-white font-semibold shadow-xl pointer-events-none select-none z-50 whitespace-nowrap">
-                📊 Dashboard Overview
+                Dashboard Overview
               </span>
             )}
           </button>
@@ -98,11 +132,11 @@ function App() {
             }`}
           >
             <Eye size={18} className="shrink-0" />
-            {!isCollapsed && <span className="animate-fadeIn">🔍 Smart Visual testing</span>}
+            {!isCollapsed && <span className="animate-fadeIn">Smart Visual testing</span>}
             
             {isCollapsed && (
               <span className="absolute left-16 scale-0 group-hover:scale-100 transition-all duration-150 rounded-lg bg-gray-900 border border-gray-800 p-2.5 text-xs text-white font-semibold shadow-xl pointer-events-none select-none z-50 whitespace-nowrap">
-                🔍 Smart Visual testing
+                Smart Visual testing
               </span>
             )}
           </button>
@@ -119,11 +153,11 @@ function App() {
             }`}
           >
             <ClipboardList size={18} className="shrink-0" />
-            {!isCollapsed && <span className="animate-fadeIn">📋 Auto TestCase generator</span>}
+            {!isCollapsed && <span className="animate-fadeIn">Auto TestCase generator</span>}
             
             {isCollapsed && (
               <span className="absolute left-16 scale-0 group-hover:scale-100 transition-all duration-150 rounded-lg bg-gray-900 border border-gray-800 p-2.5 text-xs text-white font-semibold shadow-xl pointer-events-none select-none z-50 whitespace-nowrap">
-                📋 Auto TestCase generator
+                Auto TestCase generator
               </span>
             )}
           </button>
@@ -140,11 +174,11 @@ function App() {
             }`}
           >
             <Bug size={18} className="shrink-0" />
-            {!isCollapsed && <span className="animate-fadeIn">🐛 Visual Bug Reporter</span>}
+            {!isCollapsed && <span className="animate-fadeIn">Visual Bug Reporter</span>}
             
             {isCollapsed && (
               <span className="absolute left-16 scale-0 group-hover:scale-100 transition-all duration-150 rounded-lg bg-gray-900 border border-gray-800 p-2.5 text-xs text-white font-semibold shadow-xl pointer-events-none select-none z-50 whitespace-nowrap">
-                🐛 Visual Bug Reporter
+                Visual Bug Reporter
               </span>
             )}
           </button>
@@ -161,11 +195,11 @@ function App() {
             }`}
           >
             <Code2 size={18} className="shrink-0" />
-            {!isCollapsed && <span className="animate-fadeIn">🏗️ Automation Architect</span>}
+            {!isCollapsed && <span className="animate-fadeIn">Automation Architect</span>}
             
             {isCollapsed && (
               <span className="absolute left-16 scale-0 group-hover:scale-100 transition-all duration-150 rounded-lg bg-gray-900 border border-gray-800 p-2.5 text-xs text-white font-semibold shadow-xl pointer-events-none select-none z-50 whitespace-nowrap">
-                🏗️ Automation Architect
+                Automation Architect
               </span>
             )}
           </button>
@@ -183,7 +217,7 @@ function App() {
               }`}
             >
               <SettingsIcon size={18} />
-              <span>⚙️ Configuration Panel</span>
+              <span>Configuration Panel</span>
             </button>
           </div>
         )}
@@ -215,6 +249,17 @@ function App() {
             {activeTab === 'testcases' ? 'Auto TestCase generator' : activeTab === 'bugreporter' ? 'Visual Bug Reporter' : activeTab === 'regression' ? 'Smart Visual testing' : activeTab === 'settings' ? 'Configuration Panel' : activeTab === 'automation' ? 'Automation Architect' : 'Dashboard Overview'}
           </h2>
           <div className="flex items-center gap-6">
+            {/* Global Dynamic User Guide Button - High Visibility Pill */}
+            <button
+              type="button"
+              onClick={handleOpenGuide}
+              className="bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/20 text-indigo-500 dark:text-indigo-400 transition-all flex items-center gap-1.5 text-xs font-extrabold px-3.5 py-2.5 rounded-xl shadow-sm active:scale-[0.95]"
+              title={`Open step-by-step non-technical User Guide for active tab`}
+            >
+              <HelpCircle size={14} />
+              <span>User Guide</span>
+            </button>
+
             {/* Dynamic Theme Toggle Switch */}
             <button
               onClick={toggleTheme}
@@ -246,6 +291,30 @@ function App() {
           {activeTab === 'automation' && <AutomationModule />}
         </section>
       </main>
+
+      {/* Global Dynamic User Guide Lightbox Modal */}
+      {showGuide && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-6 animate-fadeIn select-none">
+          <div className="relative w-full max-w-2xl bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-800 rounded-2xl shadow-2xl p-8 max-h-[85vh] overflow-y-auto space-y-6">
+            <div className="border-b border-slate-200 dark:border-gray-800 pb-4 flex items-center justify-between">
+              <h3 className="font-bold text-lg text-slate-800 dark:text-white flex items-center gap-2">
+                <HelpCircle className="text-indigo-500 animate-pulse" size={20} />
+                <span className="capitalize">{activeTab === 'testcases' ? 'Auto TestCase generator' : activeTab === 'bugreporter' ? 'Visual Bug Reporter' : activeTab === 'regression' ? 'Smart Visual testing' : activeTab === 'automation' ? 'Automation Architect' : 'Dashboard Overview'} Guide</span>
+              </h3>
+              <button 
+                onClick={() => setShowGuide(false)}
+                className="text-slate-400 dark:text-gray-500 hover:text-slate-600 dark:hover:text-gray-300 text-xs font-bold px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-gray-800 transition-colors"
+              >
+                Close Guide
+              </button>
+            </div>
+            
+            <div className="bg-slate-50 dark:bg-gray-950 border border-slate-200 dark:border-gray-850 p-6 rounded-xl font-sans text-xs text-slate-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap select-text h-[400px] overflow-y-auto shadow-inner">
+              {guideContent}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
