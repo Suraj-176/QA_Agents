@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import axios from 'axios'
-import { LayoutDashboard, Eye, ClipboardList, Bug, Code2, Settings as SettingsIcon, ScrollText, Sun, Moon, ChevronLeft, ChevronRight, HelpCircle } from 'lucide-react'
+import { LayoutDashboard, Eye, ClipboardList, Bug, Code2, Settings as SettingsIcon, ScrollText, Sun, Moon, ChevronLeft, ChevronRight, BookOpen } from 'lucide-react'
 
 // Components
 import Dashboard from './components/Dashboard'
@@ -256,7 +256,7 @@ function App() {
               className="bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/20 text-indigo-500 dark:text-indigo-400 transition-all flex items-center gap-1.5 text-xs font-extrabold px-3.5 py-2.5 rounded-xl shadow-sm active:scale-[0.95]"
               title={`Open step-by-step non-technical User Guide for active tab`}
             >
-              <HelpCircle size={14} />
+              <BookOpen size={14} />
               <span>User Guide</span>
             </button>
 
@@ -298,8 +298,8 @@ function App() {
           <div className="relative w-full max-w-2xl bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-800 rounded-2xl shadow-2xl p-8 max-h-[85vh] overflow-y-auto space-y-6">
             <div className="border-b border-slate-200 dark:border-gray-800 pb-4 flex items-center justify-between">
               <h3 className="font-bold text-lg text-slate-800 dark:text-white flex items-center gap-2">
-                <HelpCircle className="text-indigo-500 animate-pulse" size={20} />
-                <span className="capitalize">{activeTab === 'testcases' ? 'Auto TestCase generator' : activeTab === 'bugreporter' ? 'Visual Bug Reporter' : activeTab === 'regression' ? 'Smart Visual testing' : activeTab === 'automation' ? 'Automation Architect' : 'Dashboard Overview'} Guide</span>
+                <BookOpen className="text-indigo-500 animate-pulse" size={20} />
+                <span className="capitalize">{activeTab === 'testcases' ? 'Auto TestCase generator' : activeTab === 'bugreporter' ? 'Visual Bug Reporter' : activeTab === 'regression' ? 'Smart Visual testing' : activeTab === 'automation' ? 'Automation Architect' : activeTab === 'settings' ? 'Configuration Panel' : 'Dashboard Overview'} Guide</span>
               </h3>
               <button 
                 onClick={() => setShowGuide(false)}
