@@ -41,6 +41,9 @@ frontend/pnpm-debug.log*
 # --- Local Databases & Transient Files ---
 backend/qa_platform.db
 backend/qa_platform.db-journal
+backend/static/session_state.json
+backend/logs/
+*.log
 
 # --- Dynamic Static Assets & Uploads ---
 # Ignore visual baseline screen grabs, run captures, and vision bug files to prevent repository bloat

@@ -11,12 +11,15 @@ function RegressionModule() {
   const [activeBaseline, setActiveBaseline] = useState(null)
 
   // Form states for creating baseline
+  const [newApp, setNewApp] = useState('')
   const [newName, setNewName] = useState('')
   const [newUrl, setNewUrl] = useState('')
 
   // Form states for running tests
   const [targetUrl, setTargetUrl] = useState('')
   const [testing, setTesting] = useState(false)
+  const [appTesting, setAppTesting] = useState(false) // Custom App-level parallel suite loader
+  const [runningApp, setRunningApp] = useState(null) // Tracks the name of the app folder currently executing!
   const [testResult, setTestResult] = useState(null)
 
   // Modal visual states
@@ -49,9 +52,13 @@ function RegressionModule() {
     if (!newName || !newUrl) return
     setLoading(true)
 
-    // Read transient browser headers and headless settings from localStorage
+    // Read transient browser headers, headless, and dynamic viewport configurations from localStorage
     const browserHeaders = localStorage.getItem('browser_headers') || ""
     const visualHeadless = localStorage.getItem('visual_headless') || 'true'
+    const captureDesktop = localStorage.getItem('capture_desktop') || 'true'
+    const captureLaptop = localStorage.getItem('capture_laptop') || 'true'
+    const captureTablet = localStorage.getItem('capture_tablet') || 'true'
+    const captureMobile = localStorage.getItem('capture_mobile') || 'true'
     
     // Normalize Windows backslashes (\) to forward slashes (/) for HTTP header transmission safety!
     const chromeProfile = (localStorage.getItem('chrome_profile') || "").replace(/\\/g, '/')
@@ -60,6 +67,7 @@ function RegressionModule() {
       await axios.post(
         `${API_BASE_URL}/regression-testing/baselines`, 
         {
+          application_name: newApp.trim() || 'Default Application',
           name: newName,
           url: newUrl
         },
@@ -67,12 +75,17 @@ function RegressionModule() {
           headers: {
             'X-Browser-Headers': browserHeaders,
             'X-Chrome-Profile': chromeProfile,
-            'X-Visual-Headless': visualHeadless
+            'X-Visual-Headless': visualHeadless,
+            'X-Capture-Desktop': captureDesktop,
+            'X-Capture-Laptop': captureLaptop,
+            'X-Capture-Tablet': captureTablet,
+            'X-Capture-Mobile': captureMobile
           }
         }
       )
       setNewName('')
       setNewUrl('')
+      setNewApp('')
       await fetchBaselines()
     } catch (err) {
       alert(`Baseline generation failed: ${err.response?.data?.detail || err.message}`)
@@ -105,6 +118,10 @@ function RegressionModule() {
     setLoading(true)
     const browserHeaders = localStorage.getItem('browser_headers') || ""
     const visualHeadless = localStorage.getItem('visual_headless') || 'true'
+    const captureDesktop = localStorage.getItem('capture_desktop') || 'true'
+    const captureLaptop = localStorage.getItem('capture_laptop') || 'true'
+    const captureTablet = localStorage.getItem('capture_tablet') || 'true'
+    const captureMobile = localStorage.getItem('capture_mobile') || 'true'
     const chromeProfile = (localStorage.getItem('chrome_profile') || "").replace(/\\/g, '/')
 
     try {
@@ -115,7 +132,11 @@ function RegressionModule() {
           headers: {
             'X-Browser-Headers': browserHeaders,
             'X-Chrome-Profile': chromeProfile,
-            'X-Visual-Headless': visualHeadless
+            'X-Visual-Headless': visualHeadless,
+            'X-Capture-Desktop': captureDesktop,
+            'X-Capture-Laptop': captureLaptop,
+            'X-Capture-Tablet': captureTablet,
+            'X-Capture-Mobile': captureMobile
           }
         }
       )
@@ -220,6 +241,81 @@ function RegressionModule() {
     }
   }
 
+  const handleRunAppRegressions = async (appName) => {
+    if (!confirm(`Are you sure you want to run parallel visual regression tests strictly for all baselines belonging to the application "${appName}"?`)) return
+    
+    setAppTesting(true)
+    setRunningApp(appName) // SET STATE HERE!
+    setTestResult(null)
+
+    const browserHeaders = localStorage.getItem('browser_headers') || ""
+    const visualHeadless = localStorage.getItem('visual_headless') || 'true'
+    const chromeProfile = (localStorage.getItem('chrome_profile') || "").replace(/\\/g, '/')
+
+    // Load active isolated LLM provider credentials to pass to background triage worker
+    const provider = localStorage.getItem('llm_provider') || 'gemini'
+    const apiKey = localStorage.getItem(`llm_${provider}_api_key`) || ''
+    const model = localStorage.getItem(`llm_${provider}_model`) || ''
+    
+    const azureEndpoint = localStorage.getItem('azure_endpoint') || ''
+    const azureApiVersion = localStorage.getItem('azure_api_version') || '2023-05-15'
+
+    try {
+      const response = await axios.post(
+        `${API_BASE_URL}/regression-testing/runs/all?application_name=${encodeURIComponent(appName)}`,
+        {},
+        {
+          headers: {
+            'X-Browser-Headers': browserHeaders,
+            'X-Chrome-Profile': chromeProfile,
+            'X-Visual-Headless': visualHeadless,
+            'X-LLM-Provider': provider,
+            'X-LLM-Model': model,
+            'X-LLM-API-Key': apiKey,
+            'X-Azure-Endpoint': azureEndpoint,
+            'X-Azure-API-Version': azureApiVersion
+          }
+        }
+      )
+      
+      const scheduledRuns = response.data.runs || []
+      if (scheduledRuns.length > 0) {
+        // Find if any run corresponds to our actively selected baseline, fallback to first run
+        const targetRun = scheduledRuns.find(r => r.baseline === activeBaseline?.name) || scheduledRuns[0]
+        pollAppTestStatus(targetRun.run_id)
+      } else {
+        setAppTesting(false)
+        setRunningApp(null) // CLEAR HERE!
+      }
+    } catch (err) {
+      alert(`Comparison suite failed for ${appName}: ${err.response?.data?.detail || err.message}`)
+      setAppTesting(false)
+      setRunningApp(null) // CLEAR HERE!
+    }
+  }
+
+  const pollAppTestStatus = async (runId) => {
+    const checkStatus = async () => {
+      try {
+        const response = await axios.get(`${API_BASE_URL}/regression-testing/runs/${runId}`)
+        const runData = response.data
+        if (runData.status === 'completed' || runData.status === 'failed') {
+          setTestResult(runData)
+          setAppTesting(false)
+          setRunningApp(null) // CLEAR ON COMPLETION!
+          clearInterval(interval)
+        }
+      } catch (err) {
+        console.error('Polling app run status failed:', err)
+        setAppTesting(false)
+        setRunningApp(null) // CLEAR ON FAILURE!
+        clearInterval(interval)
+      }
+    }
+
+    const interval = setInterval(checkStatus, 2500)
+  }
+
   const handleRunTriage = async (resultId) => {
     setTriageLoading(true)
     setTriageReport(null)
@@ -281,12 +377,21 @@ function RegressionModule() {
       {/* Sidebar: Baselines list */}
       <div className="col-span-4 bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-800 shadow-sm transition-all rounded-2xl p-6 h-fit space-y-6">
         {/* Create Baseline Form */}
-        <form onSubmit={handleCreateBaseline} className="space-y-4 bg-slate-50 dark:bg-gray-950 p-4 border border-slate-200 dark:border-gray-800/60 rounded-xl">
+        <form onSubmit={handleCreateBaseline} className="space-y-3 bg-slate-50 dark:bg-gray-950 p-4 border border-slate-200 dark:border-gray-800/60 rounded-xl">
           <p className="text-xs font-bold uppercase tracking-wider text-indigo-400">Establish New Base</p>
           <div className="space-y-1">
             <input
               type="text"
-              placeholder="e.g. Landing Page"
+              placeholder="Application Name (Optional)"
+              value={newApp}
+              onChange={(e) => setNewApp(e.target.value)}
+              className="w-full bg-white dark:bg-gray-900 border border-slate-200 dark:border-slate-200 dark:border-gray-800 shadow-sm transition-all/80 rounded-lg px-3 py-2 text-xs text-slate-700 dark:text-gray-200 focus:outline-none focus:border-indigo-500"
+            />
+          </div>
+          <div className="space-y-1">
+            <input
+              type="text"
+              placeholder="Baseline Name (e.g. Landing Page)"
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
               className="w-full bg-white dark:bg-gray-900 border border-slate-200 dark:border-slate-200 dark:border-gray-800 shadow-sm transition-all/80 rounded-lg px-3 py-2 text-xs text-slate-700 dark:text-gray-200 focus:outline-none focus:border-indigo-500"
@@ -323,32 +428,81 @@ function RegressionModule() {
           </div>
         )}
 
-        {/* Baselines listing */}
-        <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
+        {/* Baselines listing grouped dynamically by Application Name */}
+        <div className="space-y-4 max-h-[380px] overflow-y-auto pr-1">
           {baselines.length === 0 ? (
             <p className="text-xs text-slate-400 dark:text-gray-500 text-center py-4">No baselines established yet.</p>
           ) : (
-            baselines.map((b) => (
-              <button
-                key={b.id}
-                onClick={() => {
-                  setActiveBaseline(b)
-                  setTargetUrl(b.url)
-                  setTestResult(null)
-                }}
-                className={`w-full text-left p-3.5 rounded-xl border transition-all flex items-center justify-between ${
-                  activeBaseline?.id === b.id
-                    ? 'bg-indigo-600/10 border-indigo-500/20 text-indigo-300 font-semibold'
-                    : 'bg-slate-50 dark:bg-gray-950/40 border-slate-200 dark:border-gray-800/40 text-slate-500 dark:text-gray-400 hover:border-slate-200 dark:border-gray-800 hover:text-slate-700 dark:text-gray-200'
-                }`}
-              >
-                <div className="truncate pr-4">
-                  <p className="text-sm truncate">{b.name}</p>
-                  <p className="text-xs text-slate-400 dark:text-gray-500 truncate mt-0.5">{b.url}</p>
+            Object.keys(
+              baselines.reduce((acc, b) => {
+                const app = b.application_name || 'Default Application'
+                if (!acc[app]) acc[app] = []
+                acc[app].push(b)
+                return acc
+              }, {})
+            ).map((appName) => {
+              const appBases = baselines.filter(b => (b.application_name || 'Default Application') === appName);
+              return (
+                <div key={appName} className="space-y-2">
+                  {/* Application Folder Header Row with Run App Suite Action button! */}
+                  <div className="flex items-center gap-2 px-1 py-1 text-[10px] font-extrabold uppercase tracking-wider text-indigo-500 dark:text-indigo-400 select-none group/app">
+                    <span>📂</span>
+                    <span>{appName}</span>
+                    <span className="text-[8px] bg-indigo-500/10 text-indigo-400 border border-indigo-500/10 px-2 py-0.5 rounded-full ml-1 shrink-0">
+                      {appBases.length} {appBases.length === 1 ? 'base' : 'bases'}
+                    </span>
+                    
+                    {/* Compact Run Application Suite button! */}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleRunAppRegressions(appName)
+                      }}
+                      disabled={runningApp === appName}
+                      className={`ml-auto transition-all bg-indigo-600 hover:bg-indigo-500 text-white font-bold p-1 rounded-md flex items-center justify-center gap-1 leading-none shadow-sm active:scale-[0.95] ${
+                        runningApp === appName ? 'opacity-100' : 'opacity-0 group-hover/app:opacity-100'
+                      }`}
+                      title={runningApp === appName ? `Visual comparison tests are currently running for "${appName}"!` : `Run visual regression comparison tests strictly for all ${appBases.length} baselines under "${appName}"!`}
+                    >
+                      {runningApp === appName ? (
+                        <RefreshCw size={8} className="animate-spin" />
+                      ) : (
+                        <Play size={8} />
+                      )}
+                      <span className="text-[7px]">
+                        {runningApp === appName ? 'Running...' : 'Run App Suite'}
+                      </span>
+                    </button>
+                  </div>
+
+                  {/* Symmetrical Indented baselines button list */}
+                  <div className="space-y-2 pl-2 border-l border-indigo-500/10 dark:border-indigo-500/5 ml-1">
+                    {appBases.map((b) => (
+                      <button
+                        key={b.id}
+                        onClick={() => {
+                          setActiveBaseline(b)
+                          setTargetUrl(b.url)
+                          setTestResult(null)
+                        }}
+                        className={`w-full text-left p-3 rounded-xl border transition-all flex items-center justify-between ${
+                          activeBaseline?.id === b.id
+                            ? 'bg-indigo-600/10 border-indigo-500/20 text-indigo-300 font-semibold shadow-inner'
+                            : 'bg-slate-50 dark:bg-gray-950/40 border-slate-200 dark:border-gray-800/40 text-slate-500 dark:text-gray-400 hover:border-slate-200 dark:border-gray-800 hover:text-slate-700 dark:text-gray-200'
+                        }`}
+                      >
+                        <div className="truncate pr-3">
+                          <p className="text-xs truncate font-semibold">{b.name}</p>
+                          <p className="text-[10px] text-slate-400 dark:text-gray-500 truncate mt-0.5">{b.url}</p>
+                        </div>
+                        <ChevronRightActive active={activeBaseline?.id === b.id} />
+                      </button>
+                    ))}
+                  </div>
                 </div>
-                <ChevronRightActive active={activeBaseline?.id === b.id} />
-              </button>
-            ))
+              );
+            })
           )}
         </div>
       </div>
@@ -362,18 +516,6 @@ function RegressionModule() {
               <div className="flex items-center justify-between border-b border-slate-200 dark:border-gray-800/60 pb-3 select-none">
                 <h3 className="font-bold text-base text-white">🔍 Compare Base of "{activeBaseline.name}"</h3>
                 <div className="flex items-center gap-3">
-                  {/* Global Regression Suite Trigger Button */}
-                  <button
-                    type="button"
-                    onClick={handleRunAllRegressions}
-                    disabled={loading || testing || baselines.length === 0}
-                    className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white px-3.5 py-1.5 rounded-lg font-bold text-xs flex items-center gap-1.5 transition-all shadow-md active:scale-[0.96]"
-                    title="Triggers parallel visual regression comparisons for ALL established baselines in the background!"
-                  >
-                    <Play size={12} className={testing ? "animate-pulse" : ""} />
-                    <span>{testing ? 'Executing Suite...' : 'Run All Regression Tests'}</span>
-                  </button>
-
                   {/* Re-capture Button */}
                   <button
                     onClick={handleRecaptureBaseline}
@@ -408,10 +550,10 @@ function RegressionModule() {
                 />
                 <button
                   type="submit"
-                  disabled={testing}
+                  disabled={testing || appTesting}
                   className="bg-emerald-600 hover:bg-emerald-500 disabled:bg-emerald-600/50 text-white font-bold text-sm px-6 rounded-xl flex items-center gap-2 active:scale-[0.98] transition-all"
                 >
-                  {testing ? (
+                  {testing || appTesting ? (
                     <>
                       <RefreshCw size={16} className="animate-spin" />
                       <span>Comparing...</span>
@@ -444,8 +586,8 @@ function RegressionModule() {
                   </div>
                 </div>
 
-                {/* Grid of Viewports */}
-                <div className="grid grid-cols-3 gap-6">
+                {/* Grid of Viewports - Responsive 4-Column Layout */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
                   {testResult.results?.map((res) => (
                     <div key={res.id} className="bg-slate-50 dark:bg-gray-950 border border-slate-200 dark:border-gray-800/80 p-5 rounded-xl space-y-4">
                       <div className="flex items-center justify-between border-b border-slate-200 dark:border-gray-800 pb-3 select-none">
@@ -500,11 +642,11 @@ function RegressionModule() {
               </div>
             )}
 
-            {/* Baseline screenshot references */}
+            {/* Baseline screenshot references - Responsive 4-Column Layout */}
             {!testResult && (
               <div className="bg-white dark:bg-gray-900 border border-slate-200 dark:border-slate-200 dark:border-gray-800 shadow-sm transition-all rounded-2xl p-8 space-y-6">
                 <h3 className="font-bold text-base text-white">🖼️ Established Baseline Viewports</h3>
-                <div className="grid grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
                   {activeBaseline.screenshots?.map((scr) => (
                     <div key={scr.id} className="bg-slate-50 dark:bg-gray-950 border border-slate-200 dark:border-gray-800/80 rounded-xl overflow-hidden group">
                       <div className="p-4 border-b border-slate-200 dark:border-gray-800 flex items-center justify-between select-none">

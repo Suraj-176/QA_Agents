@@ -28,6 +28,7 @@ regression_service = RegressionTestingService()
 # =====================================================================
 
 class BaselineCreateRequest(BaseModel):
+    application_name: Optional[str] = "Default Application"
     name: str
     url: HttpUrl
     
@@ -61,6 +62,7 @@ class ScreenshotSchema(BaseModel):
 
 class BaselineResponseSchema(BaseModel):
     id: int
+    application_name: Optional[str] = "Default Application"
     name: str
     url: str
     created_at: datetime
@@ -195,6 +197,10 @@ async def create_baseline(
     access_token: Optional[str] = Depends(extract_universal_access_token),
     x_chrome_profile: Optional[str] = Header(None, alias="X-Chrome-Profile"),
     x_visual_headless: Optional[str] = Header("true", alias="X-Visual-Headless"),
+    x_capture_desktop: Optional[str] = Header("true", alias="X-Capture-Desktop"),
+    x_capture_laptop: Optional[str] = Header("true", alias="X-Capture-Laptop"),
+    x_capture_tablet: Optional[str] = Header("true", alias="X-Capture-Tablet"),
+    x_capture_mobile: Optional[str] = Header("true", alias="X-Capture-Mobile"),
     db: Session = Depends(get_db)
 ):
     """
@@ -208,9 +214,14 @@ async def create_baseline(
             name=payload.name,
             url=str(payload.url),
             db=db,
+            application_name=payload.application_name,
             access_token=access_token,
             chrome_profile_path=x_chrome_profile,
-            headless_mode=headless_mode
+            headless_mode=headless_mode,
+            capture_desktop=(x_capture_desktop != "false"),
+            capture_laptop=(x_capture_laptop != "false"),
+            capture_tablet=(x_capture_tablet != "false"),
+            capture_mobile=(x_capture_mobile != "false")
         )
         logger.info(f"✓ Baseline created successfully: ID {result.get('baseline_id')}")
         return result
@@ -234,6 +245,7 @@ async def list_baselines(db: Session = Depends(get_db)):
     for b in baselines:
         results.append({
             "id": b.id,
+            "application_name": b.application_name,
             "name": b.name,
             "url": b.url,
             "created_at": b.created_at,
@@ -250,6 +262,7 @@ async def list_baselines(db: Session = Depends(get_db)):
 )
 async def run_all_regressions(
     background_tasks: BackgroundTasks,
+    application_name: Optional[str] = None,
     access_token: Optional[str] = Depends(extract_universal_access_token),
     x_chrome_profile: Optional[str] = Header(None, alias="X-Chrome-Profile"),
     x_visual_headless: Optional[str] = Header("true", alias="X-Visual-Headless"),
@@ -265,11 +278,17 @@ async def run_all_regressions(
     Automatically loops through all baselines, enqueues parallel comparisons in the background,
     and returns a summary of scheduled runs instantly!
     """
-    baselines = db.query(Baseline).all()
+    if application_name:
+        baselines = db.query(Baseline).filter(Baseline.application_name == application_name).all()
+        err_msg = f"No visual baselines established yet for application '{application_name}'."
+    else:
+        baselines = db.query(Baseline).all()
+        err_msg = "No visual baselines established yet. Please create baselines first."
+
     if not baselines:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="No visual baselines established yet. Please create baselines first."
+            detail=err_msg
         )
         
     headless_mode = (x_visual_headless != "false")
@@ -301,11 +320,13 @@ async def run_all_regressions(
         )
         scheduled_runs.append({"run_id": run.id, "baseline": baseline.name})
         
+    success_msg = f"Successfully triggered parallel visual regressions strictly for all {len(scheduled_runs)} baselines under '{application_name}' in the background!" if application_name else f"Successfully triggered parallel visual regressions for all {len(scheduled_runs)} established baselines in the background!"
+        
     return {
         "status": "pending",
         "scheduled_count": len(scheduled_runs),
         "runs": scheduled_runs,
-        "message": f"Successfully triggered parallel visual regressions for all {len(scheduled_runs)} established baselines in the background!"
+        "message": success_msg
     }
 
 
@@ -402,67 +423,22 @@ async def harvest_browser_session(
 @router.post("/results/{result_id}/triage")
 async def triage_visual_result(
     result_id: int,
-    x_llm_provider: Optional[str] = Header("gemini", alias="X-LLM-Provider"),
-    x_llm_model: Optional[str] = Header("gemini-1.5-flash", alias="X-LLM-Model"),
-    x_llm_api_key: Optional[str] = Header(None, alias="X-LLM-API-Key"),
-    x_azure_endpoint: Optional[str] = Header(None, alias="X-Azure-Endpoint"),
-    x_azure_api_version: Optional[str] = Header(None, alias="X-Azure-API-Version"),
     db: Session = Depends(get_db)
 ):
     """
-    Loads the OpenCV diff image and run image, and pipes them to Gemini Vision!
-    Returns a rich, professional, written triage analysis detailing exactly what layout,
-    alignment, color, or styling shifts occurred.
+    Returns the pre-calculated, written AI Visual Triage analysis cached natively in SQLite!
+    Loads instantly in 0ms, consuming 0 additional LLM tokens and requiring zero transient headers!
     """
-    if not x_llm_api_key:
-        raise HTTPException(status_code=400, detail="LLM API Key is missing in headers. Please check your settings.")
-        
     result = db.query(RegressionTestResult).filter(RegressionTestResult.id == result_id).first()
     if not result:
         raise HTTPException(status_code=404, detail="Comparison result not found.")
         
-    # Prioritize the OpenCV diff image as it highlights mismatches in red!
-    img_path = result.diff_image_path if result.diff_image_path else result.run_image_path
-    full_img_path = os.path.join(regression_service.static_dir, img_path)
-    
-    if not os.path.exists(full_img_path):
-        raise HTTPException(status_code=404, detail="Visual screenshot file is missing from disk.")
-        
-    # Load prompt template
-    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    prompt_path = os.path.join(base_dir, "prompts", "VisualTriagePrompt.txt")
-    try:
-        with open(prompt_path, "r", encoding="utf-8") as f:
-            prompt_template = f.read().strip()
-    except Exception:
-        prompt_template = "Compare the baseline and run screenshot images and describe any visual errors."
-        
-    # Read image binary bytes
-    with open(full_img_path, "rb") as image_file:
-        image_bytes = image_file.read()
-        
-    try:
-        from app.services.llm_adapter import LLMAdapter
-        # Execute multimodal vision query!
-        analysis_report = await LLMAdapter.analyze_image(
-            provider=x_llm_provider,
-            model=x_llm_model,
-            api_key=x_llm_api_key,
-            prompt=prompt_template,
-            image_bytes=image_bytes,
-            azure_endpoint=x_azure_endpoint,
-            azure_api_version=x_azure_api_version
-        )
-        return {
-            "result_id": result_id,
-            "viewport": result.viewport,
-            "similarity_score": result.similarity_score,
-            "analysis": analysis_report
-        }
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"Visual AI Triage failed: {str(e)}")
+    return {
+        "result_id": result_id,
+        "viewport": result.viewport,
+        "similarity_score": result.similarity_score,
+        "analysis": result.ai_analysis if result.ai_analysis else "Visual layout analysis is pending or matches baseline perfectly."
+    }
 
 
 @router.get(
@@ -515,6 +491,10 @@ async def recapture_baseline(
     access_token: Optional[str] = Depends(extract_universal_access_token),
     x_chrome_profile: Optional[str] = Header(None, alias="X-Chrome-Profile"),
     x_visual_headless: Optional[str] = Header("true", alias="X-Visual-Headless"),
+    x_capture_desktop: Optional[str] = Header("true", alias="X-Capture-Desktop"),
+    x_capture_laptop: Optional[str] = Header("true", alias="X-Capture-Laptop"),
+    x_capture_tablet: Optional[str] = Header("true", alias="X-Capture-Tablet"),
+    x_capture_mobile: Optional[str] = Header("true", alias="X-Capture-Mobile"),
     db: Session = Depends(get_db)
 ):
     """Re-capture and overwrite the visual viewport benchmarks for an established baseline URL."""
@@ -525,7 +505,10 @@ async def recapture_baseline(
             db=db,
             access_token=access_token,
             chrome_profile_path=x_chrome_profile,
-            headless_mode=headless_mode
+            headless_mode=headless_mode,
+            capture_desktop=(x_capture_desktop != "false"),
+            capture_tablet=(x_capture_tablet != "false"),
+            capture_mobile=(x_capture_mobile != "false")
         )
         logger.info(f"Successfully recaptured baseline {baseline_id}")
         return result

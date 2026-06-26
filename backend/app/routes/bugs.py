@@ -77,7 +77,6 @@ async def analyze_screenshot(
                 )
             image_bytes = await file.read()
             filename = file.filename
-        
         result = await bug_service.analyze_screenshot_bug(
             image_bytes=image_bytes,
             filename=filename,

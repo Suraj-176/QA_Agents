@@ -7,7 +7,6 @@ import RegressionModule from './components/RegressionModule'
 import TestCaseModule from './components/TestCaseModule'
 import BugReporterModule from './components/BugReporterModule'
 import Settings from './components/Settings'
-import AuditLogsModule from './components/AuditLogsModule'
 import AutomationModule from './components/AutomationModule'
 
 function App() {
@@ -170,27 +169,6 @@ function App() {
               </span>
             )}
           </button>
-
-          {/* Item 6: Central Audit Logs */}
-          <button
-            onClick={() => setActiveTab('auditlogs')}
-            className={`group relative flex items-center rounded-xl font-medium text-sm transition-all duration-200 w-full ${
-              isCollapsed ? 'p-3.5 justify-center' : 'px-4 py-3 justify-start gap-3.5'
-            } ${
-              activeTab === 'auditlogs'
-                ? 'bg-indigo-600/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 dark:border-indigo-500/10 font-semibold shadow-inner'
-                : 'text-slate-500 dark:text-gray-400 hover:bg-slate-100 dark:hover:bg-gray-800/50 hover:text-slate-800 dark:hover:text-gray-200 border border-transparent'
-            }`}
-          >
-            <ScrollText size={18} className="shrink-0" />
-            {!isCollapsed && <span className="animate-fadeIn">📜 Central Audit Logs</span>}
-            
-            {isCollapsed && (
-              <span className="absolute left-16 scale-0 group-hover:scale-100 transition-all duration-150 rounded-lg bg-gray-900 border border-gray-800 p-2.5 text-xs text-white font-semibold shadow-xl pointer-events-none select-none z-50 whitespace-nowrap">
-                📜 Central Audit Logs
-              </span>
-            )}
-          </button>
         </nav>
 
         {/* Footer/Settings button */}
@@ -234,7 +212,7 @@ function App() {
       <main className="flex-1 flex flex-col h-full overflow-hidden bg-slate-50 dark:bg-gray-950 transition-colors duration-200">
         <header className="h-20 bg-white dark:bg-gray-900 border-b border-slate-200 dark:border-gray-800 px-8 flex items-center justify-between shrink-0 select-none transition-colors duration-200">
           <h2 className="text-xl font-bold tracking-tight text-slate-800 dark:text-white capitalize">
-            {activeTab === 'testcases' ? 'Auto TestCase generator' : activeTab === 'bugreporter' ? 'Visual Bug Reporter' : activeTab === 'regression' ? 'Smart Visual testing' : activeTab === 'settings' ? 'Configuration Panel' : activeTab === 'auditlogs' ? 'System Audit Logs' : activeTab === 'automation' ? 'Automation Architect' : 'Dashboard Overview'}
+            {activeTab === 'testcases' ? 'Auto TestCase generator' : activeTab === 'bugreporter' ? 'Visual Bug Reporter' : activeTab === 'regression' ? 'Smart Visual testing' : activeTab === 'settings' ? 'Configuration Panel' : activeTab === 'automation' ? 'Automation Architect' : 'Dashboard Overview'}
           </h2>
           <div className="flex items-center gap-6">
             {/* Dynamic Theme Toggle Switch */}
@@ -265,7 +243,6 @@ function App() {
           {activeTab === 'testcases' && <TestCaseModule />}
           {activeTab === 'bugreporter' && <BugReporterModule />}
           {activeTab === 'settings' && <Settings />}
-          {activeTab === 'auditlogs' && <AuditLogsModule />}
           {activeTab === 'automation' && <AutomationModule />}
         </section>
       </main>

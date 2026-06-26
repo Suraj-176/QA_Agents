@@ -36,15 +36,27 @@ def log_audit(db: Session, action: str, details: str):
     Globally available thread-safe logger helper to register visual and logical 
     platform operations inside our relational SQLite storage.
     Spawns a private, isolated database session strictly to prevent SQLAlchemy transaction leaks.
+    Also, automatically clears/prunes any audit logs that are older than 7 days to maintain
+    a clean, self-healing data retention policy!
     """
     from app.database import SessionLocal
+    from datetime import datetime, timedelta
     private_db = SessionLocal()
     try:
+        # 1. Write the new system log entry
         log_entry = AuditLog(action=action, details=details)
         private_db.add(log_entry)
         private_db.commit()
+
+        # 2. Clean-slate prune: Automatically clear logs older than 7 days!
+        seven_days_ago = datetime.utcnow() - timedelta(days=7)
+        deleted_count = private_db.query(AuditLog).filter(AuditLog.created_at < seven_days_ago).delete()
+        if deleted_count > 0:
+            private_db.commit()
+            print(f"   🧹 [LOG PRUNER] Automatically cleared {deleted_count} system audit logs older than 7 days!")
+            
     except Exception as e:
-        print(f"Failed to record system audit log: {e}")
+        print(f"Failed to record or prune system audit logs: {e}")
     finally:
         private_db.close()
 

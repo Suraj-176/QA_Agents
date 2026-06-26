@@ -36,6 +36,17 @@ except Exception:
 finally:
     _db.close()
 
+# Adds the 'application_name' column to 'baselines' dynamically if missing.
+_db = SessionLocal()
+try:
+    _db.execute(text("ALTER TABLE baselines ADD COLUMN application_name TEXT DEFAULT 'Default Application'"))
+    _db.commit()
+    print("   🛠️ SQLite Dynamic Schema Migration: Added 'application_name' column successfully!")
+except Exception:
+    pass
+finally:
+    _db.close()
+
 app = FastAPI(
     title="QA.AI Platform API Server",
     description="Decoupled, multi-agent AI assistant for visual regression testing, test case generation, and bug reporting.",

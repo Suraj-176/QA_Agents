@@ -50,12 +50,12 @@ function TestCaseModule() {
     e.preventDefault()
     if (!requirements) return
 
-    // Extract dynamic keys from localStorage
+    // Extract isolated LLM credentials dynamically from localStorage matching Settings schema!
     const provider = localStorage.getItem('llm_provider') || 'gemini'
-    const model = localStorage.getItem('llm_model') || 'gemini-1.5-flash'
-    const apiKey = localStorage.getItem('llm_api_key')
+    const apiKey = localStorage.getItem(`llm_${provider}_api_key`) || ''
+    const model = localStorage.getItem(`llm_${provider}_model`) || ''
 
-    if (!apiKey) {
+    if (!apiKey || !apiKey.trim()) {
       alert('Missing LLM API Key. Please navigate to the Configuration Panel to configure your keys first.')
       return
     }

@@ -155,6 +155,25 @@ class PromptsUpdateRequest(BaseModel):
     content: str
 
 
+@router.get("/prompts/list", response_model=dict)
+async def list_prompt_files():
+    """
+    Returns the list of allowed, editable system prompt templates on disk.
+    """
+    allowed_files = [
+        "CombinedPrompt.txt",
+        "VisualTriagePrompt.txt",
+        "UIPrompt.txt", 
+        "FunctionalPrompt.txt", 
+        "BugReportPrompt.txt", 
+        "PlaywrightBootstrap.txt", 
+        "SeleniumBootstrap.txt", 
+        "CypressBootstrap.txt",
+        "AutomationFileGen.txt"
+    ]
+    return {"prompts": allowed_files}
+
+
 @router.get("/prompts/raw", response_model=dict)
 async def get_prompts_file(file: str = "CombinedPrompt.txt"):
     """
@@ -169,7 +188,8 @@ async def get_prompts_file(file: str = "CombinedPrompt.txt"):
         "PlaywrightBootstrap.txt", 
         "SeleniumBootstrap.txt", 
         "CypressBootstrap.txt",
-        "AutomationFileGen.txt"
+        "AutomationFileGen.txt",
+        "VisualTriagePrompt.txt"
     ]
     if file not in allowed_files:
         raise HTTPException(
@@ -216,7 +236,8 @@ async def save_prompts_file(
         "PlaywrightBootstrap.txt", 
         "SeleniumBootstrap.txt", 
         "CypressBootstrap.txt",
-        "AutomationFileGen.txt"
+        "AutomationFileGen.txt",
+        "VisualTriagePrompt.txt"
     ]
     if file not in allowed_files:
         raise HTTPException(

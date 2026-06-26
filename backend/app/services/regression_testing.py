@@ -15,6 +15,7 @@ from app.models import Baseline, BaselineScreenshot, RegressionTestRun, Regressi
 
 VIEWPORTS = {
     "desktop": {"width": 1920, "height": 1080},
+    "laptop": {"width": 1366, "height": 768},
     "tablet": {"width": 768, "height": 1024},
     "mobile": {"width": 375, "height": 667}
 }
@@ -122,7 +123,18 @@ class RegressionTestingService:
 
         return round(similarity, 2), is_mismatch
 
-    async def _capture_screenshots(self, url: str, base_folder: str, access_token: str = None, chrome_profile_path: str = None, headless_mode: bool = True) -> dict:
+    async def _capture_screenshots(
+        self, 
+        url: str, 
+        base_folder: str, 
+        access_token: str = None, 
+        chrome_profile_path: str = None, 
+        headless_mode: bool = True,
+        capture_desktop: bool = True,
+        capture_laptop: bool = True,
+        capture_tablet: bool = True,
+        capture_mobile: bool = True
+    ) -> dict:
         """
         Launches Playwright browser context. Deploys Pre-Authentication!
         Loads in once at the start of the session, automatically re-navigates directly back to your
@@ -351,7 +363,22 @@ class RegressionTestingService:
             # -----------------------------------------------------------------
             is_authenticated = False # Set authentication tracker state
             
-            for name, viewport in VIEWPORTS.items():
+            # Dynamic Viewport Selection: Strictly compile viewports checked by the user
+            active_viewports = {}
+            if capture_desktop:
+                active_viewports["desktop"] = VIEWPORTS["desktop"]
+            if capture_laptop:
+                active_viewports["laptop"] = VIEWPORTS["laptop"]
+            if capture_tablet:
+                active_viewports["tablet"] = VIEWPORTS["tablet"]
+            if capture_mobile:
+                active_viewports["mobile"] = VIEWPORTS["mobile"]
+                
+            # Fallback guard: if none is selected, default to desktop
+            if not active_viewports:
+                active_viewports["desktop"] = VIEWPORTS["desktop"]
+            
+            for name, viewport in active_viewports.items():
                 print(f"   📸 Capture Visual Sweep: resizing to '{name.upper()}' viewport ({viewport['width']}x{viewport['height']})...")
                 await page.set_viewport_size(viewport)
                 
@@ -656,13 +683,13 @@ class RegressionTestingService:
             "message": f"Session state successfully harvested and saved natively to disk! Future visual testing runs will automatically load this logged-in session on boot."
         }
 
-    async def setup_baseline(self, name: str, url: str, db: Session, access_token: str = None, chrome_profile_path: str = None, headless_mode: bool = True) -> dict:
+    async def setup_baseline(self, name: str, url: str, db: Session, application_name: str = "Default Application", access_token: str = None, chrome_profile_path: str = None, headless_mode: bool = True, capture_desktop: bool = True, capture_laptop: bool = True, capture_tablet: bool = True, capture_mobile: bool = True) -> dict:
         # Symmetrical Self-Healing: Instantly recreate schemas on-demand if missing on disk!
         from app.database import engine
         from app.models import Base
         Base.metadata.create_all(bind=engine)
 
-        baseline = Baseline(name=name, url=url)
+        baseline = Baseline(application_name=application_name, name=name, url=url)
         db.add(baseline)
         db.flush()
 
@@ -670,7 +697,18 @@ class RegressionTestingService:
         
         try:
             # Symmetrical, thread-local instantiation to prevent cross-loop task conflicts!
-            captured_files = run_async_in_new_thread(self._capture_screenshots, url, baseline_folder, access_token, chrome_profile_path, headless_mode)
+            captured_files = run_async_in_new_thread(
+                self._capture_screenshots, 
+                url, 
+                baseline_folder, 
+                access_token, 
+                chrome_profile_path, 
+                headless_mode,
+                capture_desktop=capture_desktop,
+                capture_laptop=capture_laptop,
+                capture_tablet=capture_tablet,
+                capture_mobile=capture_mobile
+            )
             
             for viewport, path in captured_files.items():
                 relative_path = os.path.relpath(path, self.static_dir).replace("\\", "/")
@@ -846,7 +884,7 @@ class RegressionTestingService:
         except Exception:
             pass
 
-    async def recapture_baseline(self, baseline_id: int, db: Session, access_token: str = None, chrome_profile_path: str = None, headless_mode: bool = True) -> dict:
+    async def recapture_baseline(self, baseline_id: int, db: Session, access_token: str = None, chrome_profile_path: str = None, headless_mode: bool = True, capture_desktop: bool = True, capture_tablet: bool = True, capture_mobile: bool = True) -> dict:
         baseline = db.query(Baseline).filter(Baseline.id == baseline_id).first()
         if not baseline:
             raise ValueError(f"Baseline {baseline_id} does not exist.")
@@ -854,7 +892,7 @@ class RegressionTestingService:
         baseline_folder = os.path.join(self.static_dir, "baselines", str(baseline.id))
         
         # Symmetrical, thread-local instantiation to prevent cross-loop task conflicts!
-        captured_files = run_async_in_new_thread(self._capture_screenshots, baseline.url, baseline_folder, access_token, chrome_profile_path, headless_mode)
+        captured_files = run_async_in_new_thread(self._capture_screenshots, baseline.url, baseline_folder, access_token, chrome_profile_path, headless_mode, capture_desktop, capture_tablet, capture_mobile)
         
         baseline.created_at = datetime.utcnow()
         db.commit()

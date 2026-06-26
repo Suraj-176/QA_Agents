@@ -17,15 +17,17 @@ QA.AI Platform/
 │   │   ├── database.py           ← Agnostic SQLite connection pools
 │   │   ├── models.py             ← Relational schema tables (Agent 1, 2, 3)
 │   │   ├── routes/
-│   │   │   ├── regression.py     ← API routes for Agent 1
-│   │   │   ├── test_cases.py     ← API routes for Agent 2
-│   │   │   └── bugs.py           ← API routes for Agent 3
+│   │   │   ├── regression.py     ← API routes for Agent 1 (Visual Agent)
+│   │   │   ├── test_cases.py     ← API routes for Agent 2 (Test Cases)
+│   │   │   ├── bugs.py           ← API routes for Agent 3 (Bug Reporter)
+│   │   │   └── automation.py     ← API routes for Agent 4 (Automation)
 │   │   ├── services/
 │   │   │   ├── regression_testing.py  ← Agent 1 Logic (Playwright + OpenCV)
 │   │   │   ├── test_case_generator.py ← Agent 2 Logic (Requirements extraction)
 │   │   │   ├── bug_reporter.py        ← Agent 3 Logic (LLM Vision + Jira Exporter)
+│   │   │   ├── automation_agent.py    ← Agent 4 Logic (3-Step Scaffolding Engine)
 │   │   │   └── llm_adapter.py         ← Unified multi-LLM router (BYOK)
-│   │   └── main.py               ← App entry point & static mounts
+│   │   └── main.py               ← App entry point, self-healing db, & static mounts
 │   ├── requirements.txt           ← Python dependencies
 │   └── tests/                     ← 14 Comprehensive automated unit tests
 │
@@ -36,6 +38,7 @@ QA.AI Platform/
     │   │   ├── RegressionModule.jsx
     │   │   ├── TestCaseModule.jsx
     │   │   ├── BugReporterModule.jsx
+    │   │   ├── AutomationModule.jsx
     │   │   └── Settings.jsx
     │   └── App.jsx                ← Workspace router & sidebar layout
     ├── package.json
@@ -49,25 +52,33 @@ QA.AI Platform/
 This application implements a secure, privacy-first **BYOK pattern**:
 1. **Zero Server Storage:** No LLM API Keys or JIRA credentials are saved in the backend SQLite database.
 2. **Browser Sandbox:** Credentials are input into the **Configuration Panel** and saved exclusively inside the browser's local sandbox storage (`localStorage`).
-3. **Transient Headers:** Every transaction transmits keys dynamically using secure headers (`X-LLM-Provider`, `X-LLM-Model`, `X-LLM-API-Key`). The backend instantiates the requested client for *that request only* and discards the credentials immediately.
+3. **Provider-Isolated Key Schema:** Keys and models are isolated per provider (e.g. `llm_openai_api_key`, `llm_gemini_api_key`) to prevent key-bleeding completely.
+4. **Transient Headers:** Every transaction transmits keys dynamically using secure headers. The backend instantiates the requested client for *that request only* and discards the credentials immediately.
+5. **SSO Token Security (.gitignore):** Your dynamic manual session file `static/session_state.json` (containing active corporate cookies) and traceback log directories are automatically untracked and ignored by Git, shielding your organization completely!
 
 ---
 
-## 🛠️ The Three Core Agents
+## 🛠️ The Four Core AI Agents
 
-### 🔍 Agent 1: Smart Visual Regression Testing
+### 🔍 Agent 1: Smart Visual Regression Testing (Upgraded!)
 * **Engine:** Playwright (Python) + OpenCV (Computer Vision).
-* **Workflow:** Launches headless browsers to capture base page states across Desktop (`1920x1080`), Tablet (`768x1024`), and Mobile (`375x667`) viewports.
-* **Review:** When target URLs are compared, OpenCV computes visual subtraction. If layout alignments shift or elements clip, a visual **red difference map overlay** is compiled and saved. Any layout similarity below `99.5%` triggers an automatic regression alarm.
+* **4-Viewport Captures:** Captures and compares layouts across Desktop (`1920x1080`), **Laptop (`1366x768`)** 💻, Tablet (`768x1024`), and Mobile (`375x667`) viewports.
+* **📂 Multi-App Grouped Baselines:** Real-time folder-level grouping (`📂 TruBI v2` etc.) with capsule counts. Supports selective, parallel folder-level automation sweeps!
+* **🔐 Live Manual Session Harvester:** Opens headful desktop Chrome, busters duplicate-session warnings, and extracts your active cookies under matched, strict User-Agent signatures to bypass anti-session-hijacking firewalls perfectly.
+* **🏎️ 0ms Zero-Token AI Triage:** Completely bypasses duplicate Gemini Vision API calls! Clicking "AI Triage" reads and renders your pre-calculated layout audit from the local SQLite database in 0ms!
 
-### 📋 Agent 2: AI TestCase Generator
-* **Engine:** Multi-LLM adapter (Gemini API, OpenAI, Anthropic Claude).
-* **Workflow:** Processes unstructured functional user stories, constraints, or markdown requirements, dynamically engineering comprehensive happy-path and edge-case testing plans formatted cleanly into SQLite tables.
+### 📋 Agent 2: AI TestCase Generator (Upgraded!)
+* **Engine:** Multi-LLM adapter (Gemini API, OpenAI, Anthropic Claude, OpenRouter).
+* **Workflow:** Processes unstructured requirements, user stories, or functional constraints, dynamically engineering comprehensive happy-path and edge-case testing plans formatted cleanly into SQLite tables and exportable as Excel CSV sheets.
 
-### 🐛 Agent 3: Vision-Based Bug Reporter & Jira Exporter
-* **Engine:** LLM Vision (Gemini Vision, GPT-4o, Claude Sonnet) + JIRA Cloud REST APIs.
-* **Workflow:** Drag-and-drop a screenshot of a broken page, enter manual comments, and let the AI Vision model perform a layout audit (isolating overlaps, unloaded graphics, raw exceptions).
-* **Sync:** Publish your visual audit as a real ticket to JIRA with a single click. The script automatically creates the ticket, maps priority scales, and uploads the layout screenshot as a JIRA attachment.
+### 🐛 Agent 3: Vision-Based Bug Reporter & Exporter (Upgraded!)
+* **Engine:** LLM Vision + Atlassian JIRA Cloud / DevOps REST APIs.
+* **Workflow:** Drag-and-drop a screenshot of a broken page, enter comments, and let the AI Vision model perform an audit (isolating overlaps, missing assets, raw exceptions), ready for 1-click publishing to Jira, Azure DevOps, GitLab, or GitHub with visual attachments!
+
+### 🏗️ Agent 4: Automation Architect (New!)
+* **Engine:** 3-Step Foundation Generation Pipeline.
+* **Workflow:** Bootstraps full, production-ready Selenium, Playwright, or Cypress test automation frameworks in TypeScript or Python.
+* **📦 Clean Architecture Suffixes:** Dynamically packages ZIP archives using short, cache-busting suffixes (e.g. `bootstrap_playwright_typescript_bdd_5a2b.zip`) to prevent browser cache blocks while keeping filenames highly professional!
 
 ---
 
@@ -109,6 +120,11 @@ npm run dev
 ```
 
 Open `http://127.0.0.1:3000` in your web browser, enter your API Keys in the **Configuration Panel**, and begin testing immediately!
+
+---
+
+## 🧹 Automatic 7-Day Log Pruner
+The backend is equipped with an automated SQLite transaction pruner. Every time a new action is logged, the platform calculates 7 days ago and permanently purges any logs older than 7 days, maintaining a high-performance, self-healing database index hands-free!
 
 ---
 

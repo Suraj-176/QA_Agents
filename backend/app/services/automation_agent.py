@@ -236,9 +236,22 @@ DO NOT re-output, repeat, or duplicate any of the previously generated files. Ge
             written_paths_set.add(clean_rel_path)
             written_paths.append(clean_rel_path)
 
-        # Package into ZIP archive
-        timestamp = int(os.urandom(4).hex(), 16)
-        zip_filename = f"bootstrap_{tool.lower()}_{language.lower()}_{timestamp}.zip"
+        # Package into a highly professional, custom-tailored ZIP archive matching user selections!
+        p_lower = pattern.lower()
+        if "bdd" in p_lower or "cucumber" in p_lower:
+            pattern_suffix = "bdd"
+        elif "data" in p_lower:
+            pattern_suffix = "datadriven"
+        elif "api" in p_lower:
+            pattern_suffix = "apihybrid"
+        elif "keyword" in p_lower:
+            pattern_suffix = "keyword"
+        else:
+            pattern_suffix = "framework"
+
+        # Short 4-character hex suffix to prevent browser caching while keeping name gorgeous and clean!
+        rand_id = os.urandom(2).hex()
+        zip_filename = f"bootstrap_{tool.lower()}_{language.lower()}_{pattern_suffix}_{rand_id}.zip"
         zip_filepath = os.path.join(self.static_dir, "bootstraps", zip_filename)
         
         # Housekeeping: Purge older historical bootstrap ZIPs

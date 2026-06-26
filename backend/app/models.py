@@ -11,6 +11,7 @@ class Baseline(Base):
     __tablename__ = "baselines"
 
     id = Column(Integer, primary_key=True, index=True)
+    application_name = Column(String, nullable=False, default="Default Application")
     name = Column(String, nullable=False)
     url = Column(String, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)

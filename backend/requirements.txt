@@ -1,13 +1,25 @@
+# ====================================================================
+# QA.AI Platform Backend Requirements & Dependencies
+# ====================================================================
+
+# --- 🌐 FastAPI Core Web API Layer ---
 fastapi>=0.100.0
 uvicorn>=0.22.0
 sqlalchemy>=2.0.0
 pydantic>=2.0.0
 python-multipart>=0.0.6
+
+# --- 📐 Agent 1: Playwright & OpenCV Computer Vision ---
 playwright>=1.35.0
 opencv-python-headless>=4.7.0.72
+numpy>=1.24.0
 pillow>=9.5.0
+
+# --- 🧠 Multi-LLM AI Vision Adapters ---
 google-generativeai>=0.1.0
 openai>=1.0.0
 anthropic>=0.3.0
+
+# --- 🔌 Secure HTTP Handshakes & REST Client ---
 requests>=2.31.0
 httpx>=0.24.0

@@ -25,11 +25,11 @@ function AutomationModule() {
   const [selectedFileIdx, setSelectedExtFileIndex] = useState(0) // Added for multi-file extensions!
   const [writeResult, setWriteResult] = useState(null)
 
-  // Get transient headers
+  // Get transient headers loaded dynamically matching Settings schema
   const getHeaders = () => {
     const provider = localStorage.getItem('llm_provider') || 'gemini'
-    const model = localStorage.getItem('llm_model') || 'gemini-1.5-flash'
-    const apiKey = localStorage.getItem('llm_api_key') || ''
+    const model = localStorage.getItem(`llm_${provider}_model`) || ''
+    const apiKey = localStorage.getItem(`llm_${provider}_api_key`) || ''
     
     return {
       'X-LLM-Provider': provider,
