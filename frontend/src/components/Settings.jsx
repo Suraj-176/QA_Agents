@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import axios from 'axios'
-import { Save, ShieldCheck, Eye, EyeOff, Code2, RefreshCw, CheckCircle, AlertCircle, ChevronDown, ChevronUp } from 'lucide-react'
+import { Save, ShieldCheck, Eye, EyeOff, Code2, RefreshCw, CheckCircle, AlertCircle, ChevronDown, ChevronUp, Play, Sparkles } from 'lucide-react'
 
 const API_BASE_URL = 'http://127.0.0.1:5000/api'
 
@@ -37,6 +37,11 @@ function Settings() {
 
   // Chrome Profile Path for Persistent session login bypasses
   const [chromeProfile, setChromeProfile] = useState('')
+
+  // Symmetrical Live Session Harvester states
+  const [harvesting, setHarvesting] = useState(false)
+  const [harvestUrl, setHarvestUrl] = useState('http://192.168.4.187/TruBI25v2Rel/Account/Login')
+  const [harvestStatus, setHarvestStatus] = useState(null)
 
   // Bug tracker selection
   const [bugExportTarget, setBugExportTarget] = useState('jira')
@@ -618,6 +623,64 @@ function Settings() {
                 <p className="text-[10px] text-slate-400 dark:text-gray-500 leading-normal">
                   * Bypasses strict Microsoft/Okta SSO login walls entirely by launching Playwright using your active, authenticated manual Microsoft Edge or Google Chrome session profile directory.
                 </p>
+              </div>
+
+              {/* LIVE MANUAL SESSION HARVESTER (THE ULTIMATE RESCUE SOLUTION!) */}
+              <div className="space-y-4 pt-4 border-t border-slate-100 dark:border-gray-850 select-none">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div className="space-y-1">
+                    <label className="text-sm font-semibold text-slate-700 dark:text-gray-300 flex items-center gap-2">
+                      <Sparkles className="text-indigo-500 animate-pulse" size={16} />
+                      <span>🔐 Live Manual Session Harvester (Ultimate Login Rescue!)</span>
+                    </label>
+                    <p className="text-[10px] text-slate-400 dark:text-gray-500 leading-normal">
+                      * If credentials or cookie injections get blocked by strict IIS/MFA firewalls, click this button to open a physical Chrome window. Manually log in once, and close the window—the platform will automatically harvest and save your session files natively to disk forever!
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const url = prompt("Enter your application login entry point URL:", "http://192.168.4.187/TruBI25v2Rel/Account/Login")
+                      if (!url) return
+                      setHarvesting(true)
+                      setHarvestStatus(null)
+                      try {
+                        const response = await axios.post(`${API_BASE_URL}/regression-testing/session/harvest`, { login_url: url })
+                        setHarvestStatus({ success: true, message: response.data.message })
+                      } catch (err) {
+                        setHarvestStatus({ success: false, message: err.response?.data?.detail || err.message })
+                      } finally {
+                        setHarvesting(false)
+                      }
+                    }}
+                    disabled={harvesting}
+                    className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-bold text-xs px-5 py-3 rounded-xl flex items-center gap-2 transition-all active:scale-[0.96] shrink-0 shadow-md"
+                  >
+                    {harvesting ? <RefreshCw size={14} className="animate-spin" /> : <Play size={14} />}
+                    <span>{harvesting ? 'Harvesting Session...' : 'Capture Live Session'}</span>
+                  </button>
+                </div>
+
+                {harvesting && (
+                  <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-xl p-4 flex items-start gap-3.5 animate-pulse text-xs text-indigo-400 leading-relaxed">
+                    <RefreshCw size={16} className="animate-spin shrink-0 mt-0.5 text-indigo-400" />
+                    <div>
+                      <h4 className="font-bold">🔐 LIVE BROWSER WINDOW OPENED ON YOUR DESKTOP!</h4>
+                      <p className="opacity-90 mt-0.5">Please locate the newly opened Chrome browser window on your taskbar, log in completely (override warning popups), and **CLOSE the browser window** when ready to capture your session cookies natively!</p>
+                    </div>
+                  </div>
+                )}
+
+                {harvestStatus && (
+                  <div className={`p-4 rounded-xl border flex items-start gap-3.5 animate-fadeIn text-xs leading-relaxed ${
+                    harvestStatus.success 
+                      ? 'bg-emerald-500/10 border-emerald-500/25 text-emerald-600 dark:text-emerald-400' 
+                      : 'bg-rose-500/10 border-rose-500/25 text-rose-600 dark:text-rose-400'
+                  }`}>
+                    {harvestStatus.success ? <CheckCircle size={16} /> : <AlertCircle size={16} />}
+                    <span>{harvestStatus.message}</span>
+                  </div>
+                )}
               </div>
 
               {/* NEW: DYNAMIC VISUAL HEADLESS MODE SELECTOR */}

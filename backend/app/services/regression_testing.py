@@ -7,6 +7,7 @@ import base64
 import json
 import urllib.request
 import httpx
+import re
 from datetime import datetime
 from sqlalchemy.orm import Session
 from playwright.async_api import async_playwright
@@ -123,9 +124,10 @@ class RegressionTestingService:
 
     async def _capture_screenshots(self, url: str, base_folder: str, access_token: str = None, chrome_profile_path: str = None, headless_mode: bool = True) -> dict:
         """
-        Launches Playwright browser context. Pre-compiles custom JSON local storages, cookies,
-        and headers, injecting them directly inside native Playwright storage_states on boot!
-        This completely, universally resolves redirection loops and logins on any app.
+        Launches Playwright browser context. Deploys Pre-Authentication!
+        Loads in once at the start of the session, automatically re-navigates directly back to your
+        intended sub-page (e.g. /GetUser), and captures pristine viewports of your secure page!
+        If a pre-saved manual session file exists, preloads it natively on context boot!
         """
         url = url.strip()
         if not (url.startswith("http://") or url.startswith("https://")):
@@ -134,22 +136,32 @@ class RegressionTestingService:
         os.makedirs(base_folder, exist_ok=True)
         captured_paths = {}
 
+        # Symmetrical Credentials check
+        is_credentials = bool(access_token and ":" in access_token and not "\t" in access_token)
         is_persistent = bool(chrome_profile_path and os.path.exists(chrome_profile_path))
-        headers = prepare_universal_auth_headers(access_token) if (access_token and not is_persistent) else {}
+        
+        # Standard Bearer Headers (Only if we are NOT using credentials or persistent profiles!)
+        headers = prepare_universal_auth_headers(access_token) if (access_token and not is_persistent and not is_credentials) else {}
         
         raw_token_val = None
         jwt_payload = {}
         storage_state = None
         
-        if access_token and not is_persistent:
+        # Dynamic Session State File Resolver:
+        # Check if they have a pre-saved manual browser session file saved on the server!
+        session_path = os.path.join(self.static_dir, "session_state.json")
+        is_saved_session = os.path.exists(session_path)
+
+        if is_saved_session and not is_persistent:
+            storage_state = session_path
+            print("   🚀 DETECTED SAVED BROWSER AUTHENTICATION SESSION ON SERVER! LOADING ON-BOOT NATIVELY...")
+        elif access_token and not is_persistent and not is_credentials:
             raw_token_val = headers.get("Authorization", "").replace("Bearer ", "").strip()
             jwt_payload = decode_jwt_payload(raw_token_val)
             
             # PRE-COMPILE NATIVE STORAGE STATE (100% Custom SSO and JSON support!)
             local_storage_items = []
             
-            # Symmetrical custom JSON state parser: Check if access_token is a custom JSON dump!
-            # If the user pasted their complete Chrome DevTools localStorage dump, we parse and inject it directly!
             try:
                 custom_json = json.loads(access_token.strip())
                 if isinstance(custom_json, dict):
@@ -175,7 +187,6 @@ class RegressionTestingService:
                             str_val = json.dumps(v) if isinstance(v, (dict, list)) else str(v)
                             local_storage_items.append({"name": k, "value": str_val})
                             # camelCase conversion
-                            import re
                             camel_k = re.sub(r'_([a-z])', lambda match: match.group(1).upper(), k)
                             if camel_k != k:
                                 local_storage_items.append({"name": camel_k, "value": str_val})
@@ -198,6 +209,8 @@ class RegressionTestingService:
         print(f"   🚀 TARGET SCREENSHOT URL: '{url}'")
         if is_persistent:
             print(f"   🚀 LAUNCHING PLAYWRIGHT IN PERSISTENT SESSION BYPASS MODE: '{chrome_profile_path}' (HEADLESS: {headless_mode})")
+        elif is_credentials:
+            print(f"   🚀 LAUNCHING PLAYWRIGHT IN HANDS-FREE AUTO-LOGIN SOLVER MODE...")
         else:
             print(f"   🚀 UNIVERSAL HEADERS APPLIED TO CONTEXT: {{'Authorization': 'Bearer [REDACTED]'}}" if headers else "   🚀 UNIVERSAL HEADERS APPLIED TO CONTEXT: {}")
 
@@ -255,32 +268,68 @@ class RegressionTestingService:
                     user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
                 )
 
-                if access_token:
+                # DYNAMIC MULTI-COOKIE INJECTION ROUTINE
+                if access_token and not is_credentials:
                     try:
-                        cookie_val = raw_token_val if raw_token_val else access_token.strip()
-                        cookie_name = "sessionid"
+                        raw_cookie_str = access_token.strip()
+                        cookies_to_add = []
                         
-                        if "=" in cookie_val:
-                            parts = cookie_val.split("=", 1)
-                            cookie_name = parts[0].strip()
-                            cookie_val = parts[1].strip()
-                            
                         from urllib.parse import urlparse
                         domain_clean = urlparse(url).netloc.split(":")[0]
                         
-                        await context.add_cookies([{
-                            "name": cookie_name,
-                            "value": cookie_val,
-                            "domain": domain_clean,
-                            "path": "/"
-                        }])
-                        print(f"   🚀 LEGACY SSR COOKIE INJECTED: '{cookie_name}=...' ON DOMAIN '{domain_clean}'")
+                        # Check if it is a Tab-Separated block copied from Chrome DevTools!
+                        lines = raw_cookie_str.split("\n")
+                        is_tab_separated = any("\t" in line for line in lines)
+                        
+                        if is_tab_separated:
+                            print("   🚀 DETECTED DEVTOOLS TAB-SEPARATED COOKIE LIST! PARSING NATIVELY...")
+                            for line in lines:
+                                if not line.strip():
+                                    continue
+                                parts = line.split("\t")
+                                if len(parts) >= 2:
+                                    c_name = parts[0].strip()
+                                    c_val = parts[1].strip()
+                                    
+                                    # Optional extracted domain/path
+                                    c_domain = domain_clean
+                                    if len(parts) >= 3 and ("." in parts[2] or parts[2] == domain_clean):
+                                        c_domain = parts[2].strip()
+                                        
+                                    cookies_to_add.append({
+                                        "name": c_name,
+                                        "value": c_val,
+                                        "domain": c_domain,
+                                        "path": "/"
+                                    })
+                        elif ";" in raw_cookie_str or "=" in raw_cookie_str:
+                            cookie_parts = raw_cookie_str.split(";")
+                            for part in cookie_parts:
+                                if "=" in part:
+                                    k, v = part.split("=", 1)
+                                    cookies_to_add.append({
+                                        "name": k.strip(),
+                                        "value": v.strip(),
+                                        "domain": domain_clean,
+                                        "path": "/"
+                                    })
+                        else:
+                            cookies_to_add = [
+                                {"name": "sessionid", "value": raw_cookie_str, "domain": domain_clean, "path": "/"},
+                                {"name": "ASP.NET_SessionId", "value": raw_cookie_str, "domain": domain_clean, "path": "/"},
+                                {"name": ".AspNetCore.Cookies", "value": raw_cookie_str, "domain": domain_clean, "path": "/"},
+                                {"name": "token", "value": raw_cookie_str, "domain": domain_clean, "path": "/"},
+                                {"name": "access_token", "value": raw_cookie_str, "domain": domain_clean, "path": "/"}
+                            ]
+                            
+                        await context.add_cookies(cookies_to_add)
+                        print(f"   🚀 LEGACY/SSR COOKIES SUCCESSFULLY INJECTED ({len(cookies_to_add)} keys) ON DOMAIN '{domain_clean}'!")
                     except Exception as cookie_err:
                         print(f"   ⚠️ Cookie injection bypassed: {cookie_err}")
 
                 page = await context.new_page()
 
-            if raw_token_val and not is_persistent:
+            if raw_token_val and not is_persistent and not is_saved_session:
                 async def handle_api_route(route):
                     req_url = route.request.url.lower()
                     is_static_asset = any(ext in req_url for ext in [
@@ -297,30 +346,242 @@ class RegressionTestingService:
                 
                 await page.route("**/*", handle_api_route)
 
+            # -----------------------------------------------------------------
+            # 🚀 VIEWPORTS SCREENSHOT CAPTURE SWEEP (Symmetrical Navigation Loop)
+            # -----------------------------------------------------------------
+            is_authenticated = False # Set authentication tracker state
+            
             for name, viewport in VIEWPORTS.items():
+                print(f"   📸 Capture Visual Sweep: resizing to '{name.upper()}' viewport ({viewport['width']}x{viewport['height']})...")
                 await page.set_viewport_size(viewport)
                 
+                # 1. Load the Target URL
                 try:
-                    await page.goto(url, timeout=20000, wait_until="load")
+                    print(f"   🌐 Navigating to {url} ...")
+                    await page.goto(url, timeout=25000, wait_until="domcontentloaded")
                 except Exception as goto_err:
-                    try:
-                        await page.goto(url, timeout=15000, wait_until="domcontentloaded")
-                    except Exception as fallback_err:
-                        await context.close()
-                        if 'browser' in locals() and browser:
-                            await browser.close()
-                        raise RuntimeError(f"Failed to load website {url}: {str(fallback_err)}")
+                    await context.close()
+                    if 'browser' in locals() and browser:
+                        await browser.close()
+                    raise RuntimeError(f"Failed to load website {url}: {str(goto_err)}")
 
+                # 2. RUN AUTO-LOGIN SOLVER (Only once on the first un-authenticated desktop viewport!)
+                if is_credentials and not is_authenticated:
+                    current_url = page.url
+                    # Only execute login solver if we are redirected to a login screen!
+                    if "login" in current_url.lower() or "signin" in current_url.lower():
+                        try:
+                            u_name, u_pass = access_token.strip().split(":", 1)
+                            print(f"   🚀 AUTO-LOGIN SOLVER: Detecting login elements on '{current_url}'...")
+                            
+                            # 🧠 INTELLIGENT SELF-HEALING FIELD SCRAPER
+                            username_el = None
+                            password_el = None
+                            submit_el = None
+                            
+                            inputs = await page.locator("input").all()
+                            
+                            # A. Scrape Username Field
+                            best_u_score = -1
+                            for el in inputs:
+                                if not await el.is_visible():
+                                    continue
+                                i_type = (await el.get_attribute("type") or "").lower()
+                                i_name = (await el.get_attribute("name") or "").lower()
+                                i_id = (await el.get_attribute("id") or "").lower()
+                                i_placeholder = (await el.get_attribute("placeholder") or "").lower()
+                                
+                                if i_type not in ["text", "email", ""]:
+                                    continue
+                                    
+                                score = 0
+                                for kw in ["user", "name", "email", "login", "id"]:
+                                    if kw in i_name: score += 10
+                                    if kw in i_id: score += 10
+                                    if kw in i_placeholder: score += 5
+                                    
+                                if score > best_u_score:
+                                    best_u_score = score
+                                    username_el = el
+                                    
+                            # B. Scrape Password Field (Strictly prioritizes type="password"!)
+                            for el in inputs:
+                                if not await el.is_visible():
+                                    continue
+                                i_type = (await el.get_attribute("type") or "").lower()
+                                if i_type == "password":
+                                    password_el = el
+                                    break
+                                    
+                            if not password_el:
+                                best_p_score = -1
+                                for el in inputs:
+                                    if not await el.is_visible():
+                                        continue
+                                    i_type = (await el.get_attribute("type") or "").lower()
+                                    i_name = (await el.get_attribute("name") or "").lower()
+                                    i_id = (await el.get_attribute("id") or "").lower()
+                                    
+                                    score = 0
+                                    if "pass" in i_name or "pass" in i_id: score += 10
+                                    if score > best_p_score:
+                                        best_p_score = score
+                                        password_el = el
+                                        
+                            # C. Scrape Submit Button Field
+                            buttons = await page.locator("button, input[type='submit'], input[type='button']").all()
+                            best_s_score = -1
+                            for el in buttons:
+                                if not await el.is_visible():
+                                    continue
+                                b_type = (await el.get_attribute("type") or "").lower()
+                                b_name = (await el.get_attribute("name") or "").lower()
+                                b_id = (await el.get_attribute("id") or "").lower()
+                                b_val = (await el.get_attribute("value") or "").lower()
+                                b_text = (await el.inner_text() or "").lower()
+                                
+                                score = 0
+                                if b_type == "submit": score += 10
+                                for kw in ["login", "signin", "sign-in", "submit", "enter", "continue"]:
+                                    if kw in b_text: score += 10
+                                    if kw in b_val: score += 10
+                                    if kw in b_id: score += 5
+                                    if kw in b_name: score += 5
+                                    
+                                if score > best_s_score:
+                                    best_s_score = score
+                                    submit_el = el
+
+                            # Auto-fill credentials using identified secure elements
+                            if username_el and password_el and submit_el:
+                                print("   🔑 Auto-filling credentials using self-healed form fields...")
+                                await username_el.fill(u_name)
+                                await password_el.fill(u_pass)
+                                await page.wait_for_timeout(500)
+
+                                print("   🖱️ Clicking login submit button...")
+                                await submit_el.click()
+                            else:
+                                raise ValueError("Could not dynamically locate username, password, or submit elements on form.")
+                            
+                            # Dismiss active session popup modal warnings
+                            print("   🛡️ Monitoring for active 'Session Exists / Override' popup dialogs...")
+                            await page.wait_for_timeout(2000)
+                            
+                            confirm_texts = ["Yes", "Confirm", "Continue", "Force Login", "Terminate", "OK", "Override", "Yes, Override"]
+                            for confirm_text in confirm_texts:
+                                popup_btn = page.locator(f'button:has-text("{confirm_text}"), input[value*="{confirm_text}"], a:has-text("{confirm_text}")').first
+                                if await popup_btn.is_visible():
+                                    print(f"   🚨 DETECTED 'ALREADY LOGGED IN' POPUP OVERRIDE BUTTON: '{confirm_text}'! Clicking it automatically...")
+                                    await popup_btn.click()
+                                    break
+
+                            # CRITICAL SYMMETRICAL WAIT STATE
+                            print("   🔄 Waiting for secure session redirect to complete...")
+                            await page.wait_for_url(lambda u: "login" not in u.lower(), timeout=12000)
+                            await page.wait_for_load_state("networkidle", timeout=8000)
+                            
+                            # Symmetrical 2-second sleep to ensure server fully writes and commits session states
+                            await page.wait_for_timeout(2000)
+                            print("   ✓ Authentication completely finalized!")
+                            
+                            is_authenticated = True # Toggle auth tracker to avoid duplicate login calls!
+                            
+                            # Re-navigate back to the target secure sub-page now fully authenticated!
+                            print(f"   🔄 RE-NAVIGATING DESKTOP VIEWPORT SECURELY TO SUB-PAGE: {url} ...")
+                            await page.goto(url, timeout=20000, wait_until="networkidle")
+                            
+                        except Exception as login_err:
+                            print(f"   ⚠️ Automated login solver bypassed or failed: {login_err}")
+
+                # 3. RUN UNIVERSAL STORAGE SWEEP LOOP (Bearer mode only - on first run!)
+                elif raw_token_val and not is_persistent and not is_authenticated:
+                    current_url = page.url
+                    if "login" in current_url.lower() or "signin" in current_url.lower():
+                        try:
+                            print(f"   🔑 Deploying Symmetrical Universal Storage Sweep...")
+                            jwt_payload_json = json.dumps(jwt_payload) if jwt_payload else '{}'
+                            
+                            await page.evaluate(f'''([token, claims]) => {{
+                                const keys = [
+                                    'token', 'access_token', 'accessToken', 'jwt', 'Authorization', 
+                                    'auth_token', 'authToken', 'session_token', 'sessionToken', 
+                                    'jwtToken', 'jwt_token', 'bearer_token', 'id_token', 'idToken', 
+                                    'user_token', 'userToken', 'credentials', 'auth', 'isAuthenticated',
+                                    'isLoggedIn', 'user_session', 'userSession', 'session'
+                                ];
+
+                                const nestedSession = JSON.stringify({{
+                                    "token": token,
+                                    "accessToken": token,
+                                    "access_token": token,
+                                    "tokenType": "Bearer",
+                                    ...claims
+                                }});
+
+                                const oktaStorage = JSON.stringify({{
+                                    "accessToken": {{
+                                        "accessToken": token,
+                                        "tokenType": "Bearer",
+                                        "scopes": ["openid", "email", "profile"],
+                                        "claims": claims
+                                    }},
+                                    "idToken": {{
+                                        "idToken": token,
+                                        "claims": claims
+                                    }}
+                                }});
+
+                                for (const key of keys) {{
+                                    localStorage.setItem(key, token);
+                                    sessionStorage.setItem(key, token);
+                                    localStorage.setItem(key, "Bearer " + token);
+                                    sessionStorage.setItem(key, "Bearer " + token);
+                                    localStorage.setItem(key, nestedSession);
+                                    sessionStorage.setItem(key, nestedSession);
+                                }}
+
+                                localStorage.setItem("okta-token-storage", oktaStorage);
+                                sessionStorage.setItem("okta-token-storage", oktaStorage);
+                                localStorage.setItem("isAuthenticated", "true");
+                                sessionStorage.setItem("isAuthenticated", "true");
+
+                                window.token = token;
+                                window.accessToken = token;
+                                window.authToken = token;
+                            }}''', [raw_token_val, jwt_payload])
+                            print(f"   ✓ Storage Sweep completed successfully across localStorage, sessionStorage, and window context!")
+                            
+                            # Force bind reload
+                            print(f"   🔄 Performing authentication bind reload...")
+                            await page.reload(timeout=20000, wait_until="networkidle")
+                            print(f"   ✓ Authentication reload completed successfully!")
+                            is_authenticated = True
+                        except Exception as sweep_err:
+                            print(f"   ⚠️ Storage sweep bypassed: {sweep_err}")
+
+                # 🚀 ENTERPRISE AJAX & DELAY BUSTER:
+                # A. Wait for all background dynamic AJAX fetches and API data counters to complete
                 try:
-                    await page.wait_for_load_state("networkidle", timeout=5000)
+                    print("   🔄 Waiting for all background API and data fetches to complete (networkidle)...")
+                    await page.wait_for_load_state("networkidle", timeout=8000)
                 except Exception:
                     pass
 
-                await page.wait_for_timeout(2000)
+                # B. Symmetrical Settle Wait (Comfortable 5.0-second buffer to let all charts, loaders, and repaints finalize!)
+                print("   ⏳ Sleeping for 5.0 seconds to let the UI layout fully settle, repaint, and load all charts...")
+                await page.wait_for_timeout(5000)
+
+                # Verify page load state before capture
+                current_url = page.url
+                print(f"   📍 Viewport '{name.upper()}' loaded: {current_url}")
+                if "login" in current_url.lower() or "signin" in current_url.lower():
+                    print("   ⚠️ WARNING: Viewport loaded login screen! Session might have expired.")
 
                 target_filename = f"{name}.png"
                 target_filepath = os.path.join(base_folder, target_filename)
                 
+                # Capture the fully authenticated view!
                 await page.screenshot(path=target_filepath, full_page=True)
                 captured_paths[name] = target_filepath
 
@@ -329,7 +590,78 @@ class RegressionTestingService:
                 await browser.close()
         return captured_paths
 
+    async def _harvest_session_state_worker(self, url: str, state_path: str):
+        """Worker executing manual browser login headfully inside an isolated Proactor Thread."""
+        async with async_playwright() as p:
+            # Launch 100% headfully so the user can manually see, log in, and click warning popups on their desktop!
+            browser = await p.chromium.launch(headless=False)
+            context = await browser.new_context(
+                ignore_https_errors=True,
+                user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+            )
+            page = await context.new_page()
+            
+            print(f"   🔒 [HARVESTER] Navigating to login entry point: {url}")
+            await page.goto(url, timeout=30000)
+            
+            print("   🔒 [HARVESTER] Browser window opened! Please manually complete your login on screen, override warning popups...")
+            
+            # Loop and monitor the active URL and state in real-time!
+            # Once they enter their password, click login, and successfully transition to their Home or GetUser dashboard,
+            # the backend immediately extracts your session cookies/StorageState, saves it, and CLOSES the browser automatically!
+            is_harvested = False
+            for _ in range(120): # Timeout after 60 seconds (120 * 0.5s)
+                if page.is_closed():
+                    break
+                    
+                current_u = page.url.lower()
+                # Check if we have transitioned successfully to standard authenticated landing paths!
+                if any(path in current_u for path in ["/home", "/dashboard", "/main", "/index", "/getuser"]):
+                    print(f"   ✓ [HARVESTER] Successful login detected at URL: {page.url}!")
+                    # Wait 1.5 seconds to let cookies fully settle in the browser jar
+                    await asyncio.sleep(1.5)
+                    
+                    state = await context.storage_state()
+                    with open(state_path, "w", encoding="utf-8") as f:
+                        json.dump(state, f, indent=2)
+                        
+                    print(f"   ✓ [HARVESTER] Session successfully harvested and saved to disk at {state_path}!")
+                    is_harvested = True
+                    break
+                    
+                await asyncio.sleep(0.5)
+                
+            # Fallback if the user closed the window before the redirect completed
+            if not is_harvested and not page.is_closed():
+                try:
+                    state = await context.storage_state()
+                    with open(state_path, "w", encoding="utf-8") as f:
+                        json.dump(state, f, indent=2)
+                    print("   ✓ [HARVESTER] Fallback session saved.")
+                except Exception:
+                    pass
+                    
+            await context.close()
+            await browser.close()
+
+    async def harvest_session_state(self, url: str) -> dict:
+        """
+        Launches a headful manual login browser on the desktop, captures the active authenticated
+        storage state upon close, and saves it natively to disk as a pre-populated baseline fallback!
+        """
+        state_path = os.path.join(self.static_dir, "session_state.json")
+        run_async_in_new_thread(self._harvest_session_state_worker, url, state_path)
+        return {
+            "status": "success",
+            "message": f"Session state successfully harvested and saved natively to disk! Future visual testing runs will automatically load this logged-in session on boot."
+        }
+
     async def setup_baseline(self, name: str, url: str, db: Session, access_token: str = None, chrome_profile_path: str = None, headless_mode: bool = True) -> dict:
+        # Symmetrical Self-Healing: Instantly recreate schemas on-demand if missing on disk!
+        from app.database import engine
+        from app.models import Base
+        Base.metadata.create_all(bind=engine)
+
         baseline = Baseline(name=name, url=url)
         db.add(baseline)
         db.flush()

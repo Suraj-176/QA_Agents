@@ -462,21 +462,21 @@ function RegressionModule() {
                       {/* View image comparison actions (2x2 Balanced Grid!) */}
                       <div className="grid grid-cols-2 gap-2 text-center text-xs font-semibold select-none">
                         <button
-                          onClick={() => setActiveModalImg(`${STATIC_URL}/${res.baseline_image_path}`)}
+                          onClick={() => setActiveModalImg(`${STATIC_URL}/${res.baseline_image_path}?t=${Date.now()}`)}
                           className="bg-white dark:bg-gray-900 border border-slate-200 dark:border-slate-200 dark:border-gray-800 shadow-sm transition-all hover:border-indigo-500/30 p-2 rounded-lg text-slate-500 dark:text-gray-400 hover:text-slate-700 dark:text-gray-200 transition-all flex items-center justify-center gap-1.5"
                         >
                           <ImageIcon size={13} />
                           <span>Baseline</span>
                         </button>
                         <button
-                          onClick={() => setActiveModalImg(`${STATIC_URL}/${res.run_image_path}`)}
+                          onClick={() => setActiveModalImg(`${STATIC_URL}/${res.run_image_path}?t=${Date.now()}`)}
                           className="bg-white dark:bg-gray-900 border border-slate-200 dark:border-slate-200 dark:border-gray-800 shadow-sm transition-all hover:border-indigo-500/30 p-2 rounded-lg text-slate-500 dark:text-gray-400 hover:text-slate-700 dark:text-gray-200 transition-all flex items-center justify-center gap-1.5"
                         >
                           <ImageIcon size={13} />
                           <span>Actual Run</span>
                         </button>
                         <button
-                          onClick={() => setActiveModalImg(`${STATIC_URL}/${res.diff_image_path}`)}
+                          onClick={() => setActiveModalImg(`${STATIC_URL}/${res.diff_image_path}?t=${Date.now()}`)}
                           className="bg-white dark:bg-gray-900 border border-slate-200 dark:border-slate-200 dark:border-gray-800 shadow-sm transition-all hover:border-indigo-500/30 p-2 rounded-lg text-slate-500 dark:text-gray-400 hover:text-slate-700 dark:text-gray-200 transition-all flex items-center justify-center gap-1.5"
                           disabled={!res.diff_image_path}
                         >

@@ -371,6 +371,34 @@ async def run_regression_test(
     }
 
 
+class SessionHarvestRequest(BaseModel):
+    login_url: str
+
+
+@router.post("/session/harvest", summary="Capture live browser session headfully")
+async def harvest_browser_session(
+    payload: SessionHarvestRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    Launches a headful browser window on the user's desktop, allowing them to manually log in.
+    Once they close the browser, automatically extracts and saves 100% of cookies and localStorage.
+    """
+    try:
+        url_str = str(payload.login_url)
+        logger.info(f"Initiating live session capture headfully for: {url_str} ...")
+        
+        # Call the harvesting service routine
+        result = await regression_service.harvest_session_state(url_str)
+        return result
+    except Exception as err:
+        logger.error(f"✗ Live session capture failed: {str(err)}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to capture live session state: {str(err)}"
+        )
+
+
 @router.post("/results/{result_id}/triage")
 async def triage_visual_result(
     result_id: int,

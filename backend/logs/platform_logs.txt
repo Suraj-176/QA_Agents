@@ -1115,3 +1115,760 @@ anthropic.AuthenticationError: Error code: 401 - {'type': 'error', 'error': {'ty
 ⏰ TIMESTAMP: 2026-06-24 13:03:58
 📝 MESSAGE: LLM Connection Test SUCCESS. Connected to GEMINI!
 ====================================================================
+
+====================================================================
+⏰ TIMESTAMP: 2026-06-26 10:35:58
+📝 MESSAGE: LLM Connection Test initiated. Provider: GEMINI, Model: 'gemini-2.5-flash', Endpoint: 'N/A'
+====================================================================
+
+====================================================================
+⏰ TIMESTAMP: 2026-06-26 10:35:59
+📝 MESSAGE: LLM Connection Test FAILED for GEMINI: 400 API key not valid. Please pass a valid API key. [reason: "API_KEY_INVALID"
+domain: "googleapis.com"
+metadata {
+  key: "service"
+  value: "generativelanguage.googleapis.com"
+}
+, locale: "en-US"
+message: "API key not valid. Please pass a valid API key."
+]
+--------------------------------------------------------------------
+🚨 EXCEPTION TRACEBACK:
+Traceback (most recent call last):
+  File "C:\QAAgents\backend\venv\Lib\site-packages\google\api_core\grpc_helpers_async.py", line 86, in __await__
+    response = yield from self._call.__await__()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\QAAgents\backend\venv\Lib\site-packages\grpc\aio\_interceptor.py", line 474, in __await__
+    response = yield from call.__await__()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\QAAgents\backend\venv\Lib\site-packages\grpc\aio\_call.py", line 329, in __await__
+    raise _create_rpc_error(
+grpc.aio._call.AioRpcError: <AioRpcError of RPC that terminated with:
+	status = StatusCode.INVALID_ARGUMENT
+	details = "API key not valid. Please pass a valid API key."
+	debug_error_string = "INVALID_ARGUMENT:API key not valid. Please pass a valid API key."
+>
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\QAAgents\backend\app\main.py", line 104, in test_llm_connection
+    response = await LLMAdapter.generate_text(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\QAAgents\backend\app\services\llm_adapter.py", line 48, in generate_text
+    response = await model_instance.generate_content_async(prompt)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\QAAgents\backend\venv\Lib\site-packages\google\generativeai\generative_models.py", line 385, in generate_content_async
+    response = await self._async_client.generate_content(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\QAAgents\backend\venv\Lib\site-packages\google\ai\generativelanguage_v1beta\services\generative_service\async_client.py", line 440, in generate_content
+    response = await rpc(
+               ^^^^^^^^^^
+  File "C:\QAAgents\backend\venv\Lib\site-packages\google\api_core\retry\retry_unary_async.py", line 231, in retry_wrapped_func
+    return await retry_target(
+           ^^^^^^^^^^^^^^^^^^^
+  File "C:\QAAgents\backend\venv\Lib\site-packages\google\api_core\retry\retry_unary_async.py", line 163, in retry_target
+    next_sleep = _retry_error_helper(
+                 ^^^^^^^^^^^^^^^^^^^^
+  File "C:\QAAgents\backend\venv\Lib\site-packages\google\api_core\retry\retry_base.py", line 216, in _retry_error_helper
+    raise final_exc from source_exc
+  File "C:\QAAgents\backend\venv\Lib\site-packages\google\api_core\retry\retry_unary_async.py", line 158, in retry_target
+    return await target()
+           ^^^^^^^^^^^^^^
+  File "C:\QAAgents\backend\venv\Lib\site-packages\google\api_core\grpc_helpers_async.py", line 89, in __await__
+    raise exceptions.from_grpc_error(rpc_error) from rpc_error
+google.api_core.exceptions.InvalidArgument: 400 API key not valid. Please pass a valid API key. [reason: "API_KEY_INVALID"
+domain: "googleapis.com"
+metadata {
+  key: "service"
+  value: "generativelanguage.googleapis.com"
+}
+, locale: "en-US"
+message: "API key not valid. Please pass a valid API key."
+]
+
+====================================================================
+
+====================================================================
+⏰ TIMESTAMP: 2026-06-26 10:36:08
+📝 MESSAGE: LLM Connection Test initiated. Provider: GEMINI, Model: 'gemini-2.5-flash', Endpoint: 'N/A'
+====================================================================
+
+====================================================================
+⏰ TIMESTAMP: 2026-06-26 10:36:09
+📝 MESSAGE: LLM Connection Test FAILED for GEMINI: 400 API key not valid. Please pass a valid API key. [reason: "API_KEY_INVALID"
+domain: "googleapis.com"
+metadata {
+  key: "service"
+  value: "generativelanguage.googleapis.com"
+}
+, locale: "en-US"
+message: "API key not valid. Please pass a valid API key."
+]
+--------------------------------------------------------------------
+🚨 EXCEPTION TRACEBACK:
+Traceback (most recent call last):
+  File "C:\QAAgents\backend\venv\Lib\site-packages\google\api_core\grpc_helpers_async.py", line 86, in __await__
+    response = yield from self._call.__await__()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\QAAgents\backend\venv\Lib\site-packages\grpc\aio\_interceptor.py", line 474, in __await__
+    response = yield from call.__await__()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\QAAgents\backend\venv\Lib\site-packages\grpc\aio\_call.py", line 329, in __await__
+    raise _create_rpc_error(
+grpc.aio._call.AioRpcError: <AioRpcError of RPC that terminated with:
+	status = StatusCode.INVALID_ARGUMENT
+	details = "API key not valid. Please pass a valid API key."
+	debug_error_string = "INVALID_ARGUMENT:API key not valid. Please pass a valid API key."
+>
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\QAAgents\backend\app\main.py", line 104, in test_llm_connection
+    response = await LLMAdapter.generate_text(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\QAAgents\backend\app\services\llm_adapter.py", line 48, in generate_text
+    response = await model_instance.generate_content_async(prompt)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\QAAgents\backend\venv\Lib\site-packages\google\generativeai\generative_models.py", line 385, in generate_content_async
+    response = await self._async_client.generate_content(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\QAAgents\backend\venv\Lib\site-packages\google\ai\generativelanguage_v1beta\services\generative_service\async_client.py", line 440, in generate_content
+    response = await rpc(
+               ^^^^^^^^^^
+  File "C:\QAAgents\backend\venv\Lib\site-packages\google\api_core\retry\retry_unary_async.py", line 231, in retry_wrapped_func
+    return await retry_target(
+           ^^^^^^^^^^^^^^^^^^^
+  File "C:\QAAgents\backend\venv\Lib\site-packages\google\api_core\retry\retry_unary_async.py", line 163, in retry_target
+    next_sleep = _retry_error_helper(
+                 ^^^^^^^^^^^^^^^^^^^^
+  File "C:\QAAgents\backend\venv\Lib\site-packages\google\api_core\retry\retry_base.py", line 216, in _retry_error_helper
+    raise final_exc from source_exc
+  File "C:\QAAgents\backend\venv\Lib\site-packages\google\api_core\retry\retry_unary_async.py", line 158, in retry_target
+    return await target()
+           ^^^^^^^^^^^^^^
+  File "C:\QAAgents\backend\venv\Lib\site-packages\google\api_core\grpc_helpers_async.py", line 89, in __await__
+    raise exceptions.from_grpc_error(rpc_error) from rpc_error
+google.api_core.exceptions.InvalidArgument: 400 API key not valid. Please pass a valid API key. [reason: "API_KEY_INVALID"
+domain: "googleapis.com"
+metadata {
+  key: "service"
+  value: "generativelanguage.googleapis.com"
+}
+, locale: "en-US"
+message: "API key not valid. Please pass a valid API key."
+]
+
+====================================================================
+
+====================================================================
+⏰ TIMESTAMP: 2026-06-26 10:36:25
+📝 MESSAGE: LLM Connection Test initiated. Provider: GEMINI, Model: 'gemini-2.5-flash', Endpoint: 'N/A'
+====================================================================
+
+====================================================================
+⏰ TIMESTAMP: 2026-06-26 10:36:25
+📝 MESSAGE: LLM Connection Test FAILED for GEMINI: 400 API key not valid. Please pass a valid API key. [reason: "API_KEY_INVALID"
+domain: "googleapis.com"
+metadata {
+  key: "service"
+  value: "generativelanguage.googleapis.com"
+}
+, locale: "en-US"
+message: "API key not valid. Please pass a valid API key."
+]
+--------------------------------------------------------------------
+🚨 EXCEPTION TRACEBACK:
+Traceback (most recent call last):
+  File "C:\QAAgents\backend\venv\Lib\site-packages\google\api_core\grpc_helpers_async.py", line 86, in __await__
+    response = yield from self._call.__await__()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\QAAgents\backend\venv\Lib\site-packages\grpc\aio\_interceptor.py", line 474, in __await__
+    response = yield from call.__await__()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\QAAgents\backend\venv\Lib\site-packages\grpc\aio\_call.py", line 329, in __await__
+    raise _create_rpc_error(
+grpc.aio._call.AioRpcError: <AioRpcError of RPC that terminated with:
+	status = StatusCode.INVALID_ARGUMENT
+	details = "API key not valid. Please pass a valid API key."
+	debug_error_string = "INVALID_ARGUMENT:API key not valid. Please pass a valid API key."
+>
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\QAAgents\backend\app\main.py", line 104, in test_llm_connection
+    response = await LLMAdapter.generate_text(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\QAAgents\backend\app\services\llm_adapter.py", line 48, in generate_text
+    response = await model_instance.generate_content_async(prompt)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\QAAgents\backend\venv\Lib\site-packages\google\generativeai\generative_models.py", line 385, in generate_content_async
+    response = await self._async_client.generate_content(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\QAAgents\backend\venv\Lib\site-packages\google\ai\generativelanguage_v1beta\services\generative_service\async_client.py", line 440, in generate_content
+    response = await rpc(
+               ^^^^^^^^^^
+  File "C:\QAAgents\backend\venv\Lib\site-packages\google\api_core\retry\retry_unary_async.py", line 231, in retry_wrapped_func
+    return await retry_target(
+           ^^^^^^^^^^^^^^^^^^^
+  File "C:\QAAgents\backend\venv\Lib\site-packages\google\api_core\retry\retry_unary_async.py", line 163, in retry_target
+    next_sleep = _retry_error_helper(
+                 ^^^^^^^^^^^^^^^^^^^^
+  File "C:\QAAgents\backend\venv\Lib\site-packages\google\api_core\retry\retry_base.py", line 216, in _retry_error_helper
+    raise final_exc from source_exc
+  File "C:\QAAgents\backend\venv\Lib\site-packages\google\api_core\retry\retry_unary_async.py", line 158, in retry_target
+    return await target()
+           ^^^^^^^^^^^^^^
+  File "C:\QAAgents\backend\venv\Lib\site-packages\google\api_core\grpc_helpers_async.py", line 89, in __await__
+    raise exceptions.from_grpc_error(rpc_error) from rpc_error
+google.api_core.exceptions.InvalidArgument: 400 API key not valid. Please pass a valid API key. [reason: "API_KEY_INVALID"
+domain: "googleapis.com"
+metadata {
+  key: "service"
+  value: "generativelanguage.googleapis.com"
+}
+, locale: "en-US"
+message: "API key not valid. Please pass a valid API key."
+]
+
+====================================================================
+
+====================================================================
+⏰ TIMESTAMP: 2026-06-26 10:36:48
+📝 MESSAGE: LLM Connection Test initiated. Provider: GROQ, Model: 'llama-3.3-70b-versatile', Endpoint: 'N/A'
+====================================================================
+
+====================================================================
+⏰ TIMESTAMP: 2026-06-26 10:36:51
+📝 MESSAGE: LLM Connection Test SUCCESS. Connected to GROQ!
+====================================================================
+
+====================================================================
+⏰ TIMESTAMP: 2026-06-26 10:37:06
+📝 MESSAGE: LLM Connection Test initiated. Provider: GEMINI, Model: 'gemini-2.5-flash', Endpoint: 'N/A'
+====================================================================
+
+====================================================================
+⏰ TIMESTAMP: 2026-06-26 10:37:06
+📝 MESSAGE: LLM Connection Test FAILED for GEMINI: 400 API key not valid. Please pass a valid API key. [reason: "API_KEY_INVALID"
+domain: "googleapis.com"
+metadata {
+  key: "service"
+  value: "generativelanguage.googleapis.com"
+}
+, locale: "en-US"
+message: "API key not valid. Please pass a valid API key."
+]
+--------------------------------------------------------------------
+🚨 EXCEPTION TRACEBACK:
+Traceback (most recent call last):
+  File "C:\QAAgents\backend\venv\Lib\site-packages\google\api_core\grpc_helpers_async.py", line 86, in __await__
+    response = yield from self._call.__await__()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\QAAgents\backend\venv\Lib\site-packages\grpc\aio\_interceptor.py", line 474, in __await__
+    response = yield from call.__await__()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\QAAgents\backend\venv\Lib\site-packages\grpc\aio\_call.py", line 329, in __await__
+    raise _create_rpc_error(
+grpc.aio._call.AioRpcError: <AioRpcError of RPC that terminated with:
+	status = StatusCode.INVALID_ARGUMENT
+	details = "API key not valid. Please pass a valid API key."
+	debug_error_string = "INVALID_ARGUMENT:API key not valid. Please pass a valid API key."
+>
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\QAAgents\backend\app\main.py", line 104, in test_llm_connection
+    response = await LLMAdapter.generate_text(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\QAAgents\backend\app\services\llm_adapter.py", line 48, in generate_text
+    response = await model_instance.generate_content_async(prompt)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\QAAgents\backend\venv\Lib\site-packages\google\generativeai\generative_models.py", line 385, in generate_content_async
+    response = await self._async_client.generate_content(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\QAAgents\backend\venv\Lib\site-packages\google\ai\generativelanguage_v1beta\services\generative_service\async_client.py", line 440, in generate_content
+    response = await rpc(
+               ^^^^^^^^^^
+  File "C:\QAAgents\backend\venv\Lib\site-packages\google\api_core\retry\retry_unary_async.py", line 231, in retry_wrapped_func
+    return await retry_target(
+           ^^^^^^^^^^^^^^^^^^^
+  File "C:\QAAgents\backend\venv\Lib\site-packages\google\api_core\retry\retry_unary_async.py", line 163, in retry_target
+    next_sleep = _retry_error_helper(
+                 ^^^^^^^^^^^^^^^^^^^^
+  File "C:\QAAgents\backend\venv\Lib\site-packages\google\api_core\retry\retry_base.py", line 216, in _retry_error_helper
+    raise final_exc from source_exc
+  File "C:\QAAgents\backend\venv\Lib\site-packages\google\api_core\retry\retry_unary_async.py", line 158, in retry_target
+    return await target()
+           ^^^^^^^^^^^^^^
+  File "C:\QAAgents\backend\venv\Lib\site-packages\google\api_core\grpc_helpers_async.py", line 89, in __await__
+    raise exceptions.from_grpc_error(rpc_error) from rpc_error
+google.api_core.exceptions.InvalidArgument: 400 API key not valid. Please pass a valid API key. [reason: "API_KEY_INVALID"
+domain: "googleapis.com"
+metadata {
+  key: "service"
+  value: "generativelanguage.googleapis.com"
+}
+, locale: "en-US"
+message: "API key not valid. Please pass a valid API key."
+]
+
+====================================================================
+
+====================================================================
+⏰ TIMESTAMP: 2026-06-26 10:42:55
+📝 MESSAGE: LLM Connection Test initiated. Provider: AZURE, Model: 'gpt-5.2', Endpoint: 'N/A'
+====================================================================
+
+====================================================================
+⏰ TIMESTAMP: 2026-06-26 10:42:57
+📝 MESSAGE: LLM Connection Test FAILED for AZURE: Connection error.
+--------------------------------------------------------------------
+🚨 EXCEPTION TRACEBACK:
+Traceback (most recent call last):
+  File "C:\QAAgents\backend\venv\Lib\site-packages\httpx\_transports\default.py", line 101, in map_httpcore_exceptions
+    yield
+  File "C:\QAAgents\backend\venv\Lib\site-packages\httpx\_transports\default.py", line 250, in handle_request
+    resp = self._pool.handle_request(req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\QAAgents\backend\venv\Lib\site-packages\httpcore\_sync\connection_pool.py", line 256, in handle_request
+    raise exc from None
+  File "C:\QAAgents\backend\venv\Lib\site-packages\httpcore\_sync\connection_pool.py", line 236, in handle_request
+    response = connection.handle_request(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\QAAgents\backend\venv\Lib\site-packages\httpcore\_sync\connection.py", line 101, in handle_request
+    raise exc
+  File "C:\QAAgents\backend\venv\Lib\site-packages\httpcore\_sync\connection.py", line 78, in handle_request
+    stream = self._connect(request)
+             ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\QAAgents\backend\venv\Lib\site-packages\httpcore\_sync\connection.py", line 124, in _connect
+    stream = self._network_backend.connect_tcp(**kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\QAAgents\backend\venv\Lib\site-packages\httpcore\_backends\sync.py", line 207, in connect_tcp
+    with map_exceptions(exc_map):
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.12_3.12.2800.0_x64__qbz5n2kfra8p0\Lib\contextlib.py", line 158, in __exit__
+    self.gen.throw(value)
+  File "C:\QAAgents\backend\venv\Lib\site-packages\httpcore\_exceptions.py", line 14, in map_exceptions
+    raise to_exc(exc) from exc
+httpcore.ConnectError: [Errno 11001] getaddrinfo failed
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\QAAgents\backend\venv\Lib\site-packages\openai\_base_client.py", line 1037, in request
+    response = self._send_request(
+               ^^^^^^^^^^^^^^^^^^^
+  File "C:\QAAgents\backend\venv\Lib\site-packages\openai\_client.py", line 440, in _send_request
+    return self._send_with_auth_retry(request, stream=stream, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\QAAgents\backend\venv\Lib\site-packages\openai\_client.py", line 418, in _send_with_auth_retry
+    response = super()._send_request(request, stream=stream, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\QAAgents\backend\venv\Lib\site-packages\openai\_base_client.py", line 964, in _send_request
+    return self._client.send(request, stream=stream, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\QAAgents\backend\venv\Lib\site-packages\httpx\_client.py", line 914, in send
+    response = self._send_handling_auth(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\QAAgents\backend\venv\Lib\site-packages\httpx\_client.py", line 942, in _send_handling_auth
+    response = self._send_handling_redirects(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\QAAgents\backend\venv\Lib\site-packages\httpx\_client.py", line 979, in _send_handling_redirects
+    response = self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\QAAgents\backend\venv\Lib\site-packages\httpx\_client.py", line 1014, in _send_single_request
+    response = transport.handle_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\QAAgents\backend\venv\Lib\site-packages\httpx\_transports\default.py", line 249, in handle_request
+    with map_httpcore_exceptions():
+         ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.12_3.12.2800.0_x64__qbz5n2kfra8p0\Lib\contextlib.py", line 158, in __exit__
+    self.gen.throw(value)
+  File "C:\QAAgents\backend\venv\Lib\site-packages\httpx\_transports\default.py", line 118, in map_httpcore_exceptions
+    raise mapped_exc(message) from exc
+httpx.ConnectError: [Errno 11001] getaddrinfo failed
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\QAAgents\backend\app\main.py", line 104, in test_llm_connection
+    response = await LLMAdapter.generate_text(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\QAAgents\backend\app\services\llm_adapter.py", line 95, in generate_text
+    response = client.chat.completions.create(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\QAAgents\backend\venv\Lib\site-packages\openai\_utils\_utils.py", line 298, in wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\QAAgents\backend\venv\Lib\site-packages\openai\resources\chat\completions\completions.py", line 1251, in create
+    return self._post(
+           ^^^^^^^^^^^
+  File "C:\QAAgents\backend\venv\Lib\site-packages\openai\_base_client.py", line 1332, in post
+    return cast(ResponseT, self.request(cast_to, opts, stream=stream, stream_cls=stream_cls))
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\QAAgents\backend\venv\Lib\site-packages\openai\_base_client.py", line 1072, in request
+    raise APIConnectionError(request=request) from err
+openai.APIConnectionError: Connection error.
+
+====================================================================
+
+====================================================================
+⏰ TIMESTAMP: 2026-06-26 10:43:03
+📝 MESSAGE: LLM Connection Test initiated. Provider: AZURE, Model: 'gpt-5.2', Endpoint: 'N/A'
+====================================================================
+
+====================================================================
+⏰ TIMESTAMP: 2026-06-26 10:43:05
+📝 MESSAGE: LLM Connection Test FAILED for AZURE: Connection error.
+--------------------------------------------------------------------
+🚨 EXCEPTION TRACEBACK:
+Traceback (most recent call last):
+  File "C:\QAAgents\backend\venv\Lib\site-packages\httpx\_transports\default.py", line 101, in map_httpcore_exceptions
+    yield
+  File "C:\QAAgents\backend\venv\Lib\site-packages\httpx\_transports\default.py", line 250, in handle_request
+    resp = self._pool.handle_request(req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\QAAgents\backend\venv\Lib\site-packages\httpcore\_sync\connection_pool.py", line 256, in handle_request
+    raise exc from None
+  File "C:\QAAgents\backend\venv\Lib\site-packages\httpcore\_sync\connection_pool.py", line 236, in handle_request
+    response = connection.handle_request(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\QAAgents\backend\venv\Lib\site-packages\httpcore\_sync\connection.py", line 101, in handle_request
+    raise exc
+  File "C:\QAAgents\backend\venv\Lib\site-packages\httpcore\_sync\connection.py", line 78, in handle_request
+    stream = self._connect(request)
+             ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\QAAgents\backend\venv\Lib\site-packages\httpcore\_sync\connection.py", line 124, in _connect
+    stream = self._network_backend.connect_tcp(**kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\QAAgents\backend\venv\Lib\site-packages\httpcore\_backends\sync.py", line 207, in connect_tcp
+    with map_exceptions(exc_map):
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.12_3.12.2800.0_x64__qbz5n2kfra8p0\Lib\contextlib.py", line 158, in __exit__
+    self.gen.throw(value)
+  File "C:\QAAgents\backend\venv\Lib\site-packages\httpcore\_exceptions.py", line 14, in map_exceptions
+    raise to_exc(exc) from exc
+httpcore.ConnectError: [Errno 11001] getaddrinfo failed
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\QAAgents\backend\venv\Lib\site-packages\openai\_base_client.py", line 1037, in request
+    response = self._send_request(
+               ^^^^^^^^^^^^^^^^^^^
+  File "C:\QAAgents\backend\venv\Lib\site-packages\openai\_client.py", line 440, in _send_request
+    return self._send_with_auth_retry(request, stream=stream, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\QAAgents\backend\venv\Lib\site-packages\openai\_client.py", line 418, in _send_with_auth_retry
+    response = super()._send_request(request, stream=stream, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\QAAgents\backend\venv\Lib\site-packages\openai\_base_client.py", line 964, in _send_request
+    return self._client.send(request, stream=stream, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\QAAgents\backend\venv\Lib\site-packages\httpx\_client.py", line 914, in send
+    response = self._send_handling_auth(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\QAAgents\backend\venv\Lib\site-packages\httpx\_client.py", line 942, in _send_handling_auth
+    response = self._send_handling_redirects(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\QAAgents\backend\venv\Lib\site-packages\httpx\_client.py", line 979, in _send_handling_redirects
+    response = self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\QAAgents\backend\venv\Lib\site-packages\httpx\_client.py", line 1014, in _send_single_request
+    response = transport.handle_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\QAAgents\backend\venv\Lib\site-packages\httpx\_transports\default.py", line 249, in handle_request
+    with map_httpcore_exceptions():
+         ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.12_3.12.2800.0_x64__qbz5n2kfra8p0\Lib\contextlib.py", line 158, in __exit__
+    self.gen.throw(value)
+  File "C:\QAAgents\backend\venv\Lib\site-packages\httpx\_transports\default.py", line 118, in map_httpcore_exceptions
+    raise mapped_exc(message) from exc
+httpx.ConnectError: [Errno 11001] getaddrinfo failed
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\QAAgents\backend\app\main.py", line 104, in test_llm_connection
+    response = await LLMAdapter.generate_text(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\QAAgents\backend\app\services\llm_adapter.py", line 95, in generate_text
+    response = client.chat.completions.create(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\QAAgents\backend\venv\Lib\site-packages\openai\_utils\_utils.py", line 298, in wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\QAAgents\backend\venv\Lib\site-packages\openai\resources\chat\completions\completions.py", line 1251, in create
+    return self._post(
+           ^^^^^^^^^^^
+  File "C:\QAAgents\backend\venv\Lib\site-packages\openai\_base_client.py", line 1332, in post
+    return cast(ResponseT, self.request(cast_to, opts, stream=stream, stream_cls=stream_cls))
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\QAAgents\backend\venv\Lib\site-packages\openai\_base_client.py", line 1072, in request
+    raise APIConnectionError(request=request) from err
+openai.APIConnectionError: Connection error.
+
+====================================================================
+
+====================================================================
+⏰ TIMESTAMP: 2026-06-26 10:44:29
+📝 MESSAGE: LLM Connection Test initiated. Provider: GEMINI, Model: 'gemini-2.5-flash', Endpoint: 'N/A'
+====================================================================
+
+====================================================================
+⏰ TIMESTAMP: 2026-06-26 10:44:29
+📝 MESSAGE: LLM Connection Test FAILED for GEMINI: 400 API key not valid. Please pass a valid API key. [reason: "API_KEY_INVALID"
+domain: "googleapis.com"
+metadata {
+  key: "service"
+  value: "generativelanguage.googleapis.com"
+}
+, locale: "en-US"
+message: "API key not valid. Please pass a valid API key."
+]
+--------------------------------------------------------------------
+🚨 EXCEPTION TRACEBACK:
+Traceback (most recent call last):
+  File "C:\QAAgents\backend\venv\Lib\site-packages\google\api_core\grpc_helpers_async.py", line 86, in __await__
+    response = yield from self._call.__await__()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\QAAgents\backend\venv\Lib\site-packages\grpc\aio\_interceptor.py", line 474, in __await__
+    response = yield from call.__await__()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\QAAgents\backend\venv\Lib\site-packages\grpc\aio\_call.py", line 329, in __await__
+    raise _create_rpc_error(
+grpc.aio._call.AioRpcError: <AioRpcError of RPC that terminated with:
+	status = StatusCode.INVALID_ARGUMENT
+	details = "API key not valid. Please pass a valid API key."
+	debug_error_string = "INVALID_ARGUMENT:API key not valid. Please pass a valid API key."
+>
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\QAAgents\backend\app\main.py", line 104, in test_llm_connection
+    response = await LLMAdapter.generate_text(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\QAAgents\backend\app\services\llm_adapter.py", line 48, in generate_text
+    response = await model_instance.generate_content_async(prompt)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\QAAgents\backend\venv\Lib\site-packages\google\generativeai\generative_models.py", line 385, in generate_content_async
+    response = await self._async_client.generate_content(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\QAAgents\backend\venv\Lib\site-packages\google\ai\generativelanguage_v1beta\services\generative_service\async_client.py", line 440, in generate_content
+    response = await rpc(
+               ^^^^^^^^^^
+  File "C:\QAAgents\backend\venv\Lib\site-packages\google\api_core\retry\retry_unary_async.py", line 231, in retry_wrapped_func
+    return await retry_target(
+           ^^^^^^^^^^^^^^^^^^^
+  File "C:\QAAgents\backend\venv\Lib\site-packages\google\api_core\retry\retry_unary_async.py", line 163, in retry_target
+    next_sleep = _retry_error_helper(
+                 ^^^^^^^^^^^^^^^^^^^^
+  File "C:\QAAgents\backend\venv\Lib\site-packages\google\api_core\retry\retry_base.py", line 216, in _retry_error_helper
+    raise final_exc from source_exc
+  File "C:\QAAgents\backend\venv\Lib\site-packages\google\api_core\retry\retry_unary_async.py", line 158, in retry_target
+    return await target()
+           ^^^^^^^^^^^^^^
+  File "C:\QAAgents\backend\venv\Lib\site-packages\google\api_core\grpc_helpers_async.py", line 89, in __await__
+    raise exceptions.from_grpc_error(rpc_error) from rpc_error
+google.api_core.exceptions.InvalidArgument: 400 API key not valid. Please pass a valid API key. [reason: "API_KEY_INVALID"
+domain: "googleapis.com"
+metadata {
+  key: "service"
+  value: "generativelanguage.googleapis.com"
+}
+, locale: "en-US"
+message: "API key not valid. Please pass a valid API key."
+]
+
+====================================================================
+
+====================================================================
+⏰ TIMESTAMP: 2026-06-26 10:46:30
+📝 MESSAGE: LLM Connection Test initiated. Provider: GEMINI, Model: 'gemini-2.5-flash', Endpoint: 'N/A'
+====================================================================
+
+====================================================================
+⏰ TIMESTAMP: 2026-06-26 10:46:31
+📝 MESSAGE: LLM Connection Test FAILED for GEMINI: 400 API key not valid. Please pass a valid API key. [reason: "API_KEY_INVALID"
+domain: "googleapis.com"
+metadata {
+  key: "service"
+  value: "generativelanguage.googleapis.com"
+}
+, locale: "en-US"
+message: "API key not valid. Please pass a valid API key."
+]
+--------------------------------------------------------------------
+🚨 EXCEPTION TRACEBACK:
+Traceback (most recent call last):
+  File "C:\QAAgents\backend\venv\Lib\site-packages\google\api_core\grpc_helpers_async.py", line 86, in __await__
+    response = yield from self._call.__await__()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\QAAgents\backend\venv\Lib\site-packages\grpc\aio\_interceptor.py", line 474, in __await__
+    response = yield from call.__await__()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\QAAgents\backend\venv\Lib\site-packages\grpc\aio\_call.py", line 329, in __await__
+    raise _create_rpc_error(
+grpc.aio._call.AioRpcError: <AioRpcError of RPC that terminated with:
+	status = StatusCode.INVALID_ARGUMENT
+	details = "API key not valid. Please pass a valid API key."
+	debug_error_string = "INVALID_ARGUMENT:API key not valid. Please pass a valid API key."
+>
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\QAAgents\backend\app\main.py", line 104, in test_llm_connection
+    response = await LLMAdapter.generate_text(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\QAAgents\backend\app\services\llm_adapter.py", line 48, in generate_text
+    response = await model_instance.generate_content_async(prompt)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\QAAgents\backend\venv\Lib\site-packages\google\generativeai\generative_models.py", line 385, in generate_content_async
+    response = await self._async_client.generate_content(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\QAAgents\backend\venv\Lib\site-packages\google\ai\generativelanguage_v1beta\services\generative_service\async_client.py", line 440, in generate_content
+    response = await rpc(
+               ^^^^^^^^^^
+  File "C:\QAAgents\backend\venv\Lib\site-packages\google\api_core\retry\retry_unary_async.py", line 231, in retry_wrapped_func
+    return await retry_target(
+           ^^^^^^^^^^^^^^^^^^^
+  File "C:\QAAgents\backend\venv\Lib\site-packages\google\api_core\retry\retry_unary_async.py", line 163, in retry_target
+    next_sleep = _retry_error_helper(
+                 ^^^^^^^^^^^^^^^^^^^^
+  File "C:\QAAgents\backend\venv\Lib\site-packages\google\api_core\retry\retry_base.py", line 216, in _retry_error_helper
+    raise final_exc from source_exc
+  File "C:\QAAgents\backend\venv\Lib\site-packages\google\api_core\retry\retry_unary_async.py", line 158, in retry_target
+    return await target()
+           ^^^^^^^^^^^^^^
+  File "C:\QAAgents\backend\venv\Lib\site-packages\google\api_core\grpc_helpers_async.py", line 89, in __await__
+    raise exceptions.from_grpc_error(rpc_error) from rpc_error
+google.api_core.exceptions.InvalidArgument: 400 API key not valid. Please pass a valid API key. [reason: "API_KEY_INVALID"
+domain: "googleapis.com"
+metadata {
+  key: "service"
+  value: "generativelanguage.googleapis.com"
+}
+, locale: "en-US"
+message: "API key not valid. Please pass a valid API key."
+]
+
+====================================================================
+
+====================================================================
+⏰ TIMESTAMP: 2026-06-26 10:46:40
+📝 MESSAGE: LLM Connection Test initiated. Provider: GEMINI, Model: 'gemini-2.5-flash', Endpoint: 'N/A'
+====================================================================
+
+====================================================================
+⏰ TIMESTAMP: 2026-06-26 10:46:41
+📝 MESSAGE: LLM Connection Test SUCCESS. Connected to GEMINI!
+====================================================================
+
+====================================================================
+⏰ TIMESTAMP: 2026-06-26 10:47:03
+📝 MESSAGE: LLM Connection Test initiated. Provider: GEMINI, Model: 'gemini-2.5-flash', Endpoint: 'N/A'
+====================================================================
+
+====================================================================
+⏰ TIMESTAMP: 2026-06-26 10:47:03
+📝 MESSAGE: LLM Connection Test FAILED for GEMINI: 400 API key not valid. Please pass a valid API key. [reason: "API_KEY_INVALID"
+domain: "googleapis.com"
+metadata {
+  key: "service"
+  value: "generativelanguage.googleapis.com"
+}
+, locale: "en-US"
+message: "API key not valid. Please pass a valid API key."
+]
+--------------------------------------------------------------------
+🚨 EXCEPTION TRACEBACK:
+Traceback (most recent call last):
+  File "C:\QAAgents\backend\venv\Lib\site-packages\google\api_core\grpc_helpers_async.py", line 86, in __await__
+    response = yield from self._call.__await__()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\QAAgents\backend\venv\Lib\site-packages\grpc\aio\_interceptor.py", line 474, in __await__
+    response = yield from call.__await__()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\QAAgents\backend\venv\Lib\site-packages\grpc\aio\_call.py", line 329, in __await__
+    raise _create_rpc_error(
+grpc.aio._call.AioRpcError: <AioRpcError of RPC that terminated with:
+	status = StatusCode.INVALID_ARGUMENT
+	details = "API key not valid. Please pass a valid API key."
+	debug_error_string = "INVALID_ARGUMENT:API key not valid. Please pass a valid API key."
+>
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\QAAgents\backend\app\main.py", line 104, in test_llm_connection
+    response = await LLMAdapter.generate_text(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\QAAgents\backend\app\services\llm_adapter.py", line 48, in generate_text
+    response = await model_instance.generate_content_async(prompt)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\QAAgents\backend\venv\Lib\site-packages\google\generativeai\generative_models.py", line 385, in generate_content_async
+    response = await self._async_client.generate_content(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\QAAgents\backend\venv\Lib\site-packages\google\ai\generativelanguage_v1beta\services\generative_service\async_client.py", line 440, in generate_content
+    response = await rpc(
+               ^^^^^^^^^^
+  File "C:\QAAgents\backend\venv\Lib\site-packages\google\api_core\retry\retry_unary_async.py", line 231, in retry_wrapped_func
+    return await retry_target(
+           ^^^^^^^^^^^^^^^^^^^
+  File "C:\QAAgents\backend\venv\Lib\site-packages\google\api_core\retry\retry_unary_async.py", line 163, in retry_target
+    next_sleep = _retry_error_helper(
+                 ^^^^^^^^^^^^^^^^^^^^
+  File "C:\QAAgents\backend\venv\Lib\site-packages\google\api_core\retry\retry_base.py", line 216, in _retry_error_helper
+    raise final_exc from source_exc
+  File "C:\QAAgents\backend\venv\Lib\site-packages\google\api_core\retry\retry_unary_async.py", line 158, in retry_target
+    return await target()
+           ^^^^^^^^^^^^^^
+  File "C:\QAAgents\backend\venv\Lib\site-packages\google\api_core\grpc_helpers_async.py", line 89, in __await__
+    raise exceptions.from_grpc_error(rpc_error) from rpc_error
+google.api_core.exceptions.InvalidArgument: 400 API key not valid. Please pass a valid API key. [reason: "API_KEY_INVALID"
+domain: "googleapis.com"
+metadata {
+  key: "service"
+  value: "generativelanguage.googleapis.com"
+}
+, locale: "en-US"
+message: "API key not valid. Please pass a valid API key."
+]
+
+====================================================================
+
+====================================================================
+⏰ TIMESTAMP: 2026-06-26 10:47:07
+📝 MESSAGE: LLM Connection Test initiated. Provider: GEMINI, Model: 'gemini-2.5-flash', Endpoint: 'N/A'
+====================================================================
+
+====================================================================
+⏰ TIMESTAMP: 2026-06-26 10:47:07
+📝 MESSAGE: LLM Connection Test SUCCESS. Connected to GEMINI!
+====================================================================
+
+====================================================================
+⏰ TIMESTAMP: 2026-06-26 10:50:54
+📝 MESSAGE: LLM Connection Test initiated. Provider: GEMINI, Model: 'gemini-2.5-flash', Endpoint: 'N/A'
+====================================================================
+
+====================================================================
+⏰ TIMESTAMP: 2026-06-26 10:50:55
+📝 MESSAGE: LLM Connection Test SUCCESS. Connected to GEMINI!
+====================================================================
+
+====================================================================
+⏰ TIMESTAMP: 2026-06-26 11:05:46
+📝 MESSAGE: LLM Connection Test initiated. Provider: GEMINI, Model: 'gemini-2.5-flash', Endpoint: 'N/A'
+====================================================================
+
+====================================================================
+⏰ TIMESTAMP: 2026-06-26 11:05:48
+📝 MESSAGE: LLM Connection Test SUCCESS. Connected to GEMINI!
+====================================================================
